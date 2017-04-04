@@ -1,12 +1,44 @@
 import sys
 import socket
 import select
+import random
 
 # Global Constants
 HOST = ''
 PORT = 2129
 SOCKET_LIST = []
 RECV_BUFFER = 1024
+RANDOM_USERNAMES = [
+    "TalkativeLug",
+    "FaithfulWeirdo",
+    "MeagerSucker",
+    "ForthrightNerd",
+    "ElderlyCheater",
+    "RadiantJerk",
+    "MediocreNobody",
+    "HandmadeDeadbeat",
+    "RapidSicko",
+    "UnequalFool"
+]
+ACTIVE_USERS = []
+
+
+class User:
+    def __init__(self, user, addr):
+        self.user = user
+        self.name = random.choice(RANDOM_USERNAMES)
+        self.addr = addr
+        # TODO: remove username when it's assigned but add it back to the list when user disconnects
+        RANDOM_USERNAMES.remove(self.name)
+
+    def get_name(self):
+        return self.name
+
+    def get_user(self):
+        return self.user
+
+    def get_addr(self):
+        return self.addr
 
 
 def chat_server():
@@ -27,22 +59,38 @@ def chat_server():
 
         for sock in ready_to_read:
 
+            print("sock")
+            print(sock)
+
             # If a new connection request is received
             if sock == server_socket:
                 sockfd, addr = server_socket.accept()
                 SOCKET_LIST.append(sockfd)
-                print("Client (%s, %s) connected" % addr)
-                broadcast(server_socket, sockfd, "[%s:%s] entered our chatting room\n" % addr)
+
+                user = User(sockfd, addr)
+                username = user.get_name()
+
+                ACTIVE_USERS.append(user)
+
+                print("[" + username + "] connected")
+                print("Client (%s, %s) connected" % user.get_addr())
+                sockfd.send(username.encode())
+                broadcast(server_socket, sockfd, "\n[" + username + "] entered our chatting room\n")
 
             # A message is received from the client (not a new connection)
             else:
                 try:
                     data = sock.recv(RECV_BUFFER).decode()
+                    for user in ACTIVE_USERS:
+                        if user.get_user() == sock:
+                            username = user.get_name()
+                            break
                     if data:
-                        broadcast(server_socket, sock, "\r" + '[' + str(sock.getpeername()) + '] ' + data)
+                        broadcast(server_socket, sock, "\r" + '[' + username + '] ' + data)
                     else:
                         if sock in SOCKET_LIST:
                             SOCKET_LIST.remove(sock)
+                            print("Client removed from list")
 
                         broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
 

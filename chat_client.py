@@ -19,7 +19,10 @@ def chat_client():
         sys.exit()
 
     print("Connected to remote host. You can start sending messages")
-    sys.stdout.write('[Me] '); sys.stdout.flush()
+    username = client_socket.recv(RECV_BUFFER).decode()
+    print("Your username is " + username + ". Deal with it.")
+    sys.stdout.write("[" + username + "] ")
+    sys.stdout.flush()
 
     while True:
         socket_list = [sys.stdin, client_socket]
@@ -29,19 +32,20 @@ def chat_client():
             if sock == client_socket:
                 data = sock.recv(RECV_BUFFER).decode()
                 if not data:
-                    print("Nothing sent...")
+                    print("Disconnected from chat server")
                     sys.exit()
                 else:
                     # print data
                     sys.stdout.write(data)
-                    sys.stdout.write('[Me] ')
+                    sys.stdout.write("[" + username + "] ")
                     sys.stdout.flush()
 
             else:
                 # user entered a message
                 msg = sys.stdin.readline()
                 client_socket.send(msg.encode())
-                sys.stdout.write('[Me] '); sys.stdout.flush()
+                sys.stdout.write("[" + username + "] ")
+                sys.stdout.flush()
 
 
 if __name__ == "__main__":
