@@ -5,7 +5,7 @@ import sys
 from _thread import *
  
 HOST = ''   
-PORT = 2116
+PORT = 2115
  
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -27,7 +27,7 @@ s.listen(5)
 print ('Socket now listening For Clients')
  
 #Function for handling connections. 
-def handleclient(conn):
+def handle_client(conn):
 
     #Sending message to connected client
     conn.send(b'Welcome to the server. Type something and hit enter\r\n') 
@@ -54,7 +54,7 @@ while True:
 
         #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
         #this function also automatically closes the thread once the function has ened. Part of python library
-        start_new_thread(handleclient ,(conn,))
+        start_new_thread(handle_client ,(conn,))
     except KeyboardInterrupt:
         print("Closing server")
         s.close()
