@@ -14,7 +14,8 @@
 import os
 import random
 import sge
-import socket, ssl, threading
+from socket import socket
+import ssl, _thread
 
 DATA = os.path.join(os.path.dirname(__file__), "data")
 PADDLE_XOFFSET = 32
@@ -28,6 +29,8 @@ TEXT_OFFSET = 16
 
 game_in_progress = True
 
+#TODO: Create message display that takes in a username from each client
+#      This is done using pygame.display
 
 class Game(sge.dsp.Game):
 
