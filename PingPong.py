@@ -13,6 +13,8 @@ from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
 from socket import *
 from _thread import *
 
+HOST = ''   
+PORT = 2115
 
 #Initialize the game
 pygame.init()
@@ -21,6 +23,7 @@ screen = pygame.display.set_mode(screensize)
 FPS = 200
 
 PLAYER_LIST = []
+RECV_BUFF = 1024
 
 #Define colors
 black = (0, 0, 0)
@@ -95,7 +98,6 @@ class Pong(object):
                         self.direction[0] = -1
                         self.player_score += 1
                         sound.play()
-                        self.speedx += 1 #speed increases when pong ball collides
                         if self.player_score == 10: #win if you score 15 points
                                 self.player_paddle_win = True   
             else:
@@ -120,10 +122,10 @@ class PlayerPaddle(object):
 
         if player % 2 == 0:
             self.centery = int(screensize[1]*0.5)
-            self.centerx = screensize[0]-5
+            self.centerx = player * screensize[0]-5
         else:
             self.centery = int(screensize[1]*0.5)
-            self.centerx = 5
+            self.centerx = player * 5
         self.height = 100
         self.width = 10
         self.id = player
@@ -137,10 +139,27 @@ class PlayerPaddle(object):
         # Speed and direction
         self.speed = 3
         self.direction = 0
-                
-    def update(self):
+    def update_local(self):
         self.centery += self.direction*self.speed
         self.rect.center = (self.centerx, self.centery)
+
+    def getId(self):
+        return self.id
+                
+    def update(self,server):
+        global HOST
+        global PORT
+        self.centery += self.direction*self.speed
+        self.rect.center = (self.centerx, self.centery)
+
+        #TODO: refractor, this is only for debugging
+        info = {}
+        info["x"] = self.centerx
+        info["y"] = self.centery
+        info["id"] = self.id
+        data = "updateLocation;" +json.dumps(info) + "\r\n"
+        server.sendto(data.encode(),(HOST,PORT))
+
 
         #make sure paddle does not go off screen
         if self.rect.top < 0:
@@ -153,28 +172,8 @@ class PlayerPaddle(object):
         pygame.draw.rect(screen, black, self.rect, 1)
 
 
-# connecting to server logic
-def handle_server(server):
-    #TODO: Handle connection errors
-    global PLAYER_LIST
-    print ("Connected to server")
-
-    while True:
-        res = server.recv(1024).decode().split(";")
-        data = b'ack\r\n'
-
-        if res[0] == "newPlayer":
-            server.send(data)
-            detail = json.loads(res[1])
-            player = PlayerPaddle(screensize, detail["id"])
-            PLAYER_LIST.append(player)
-        if res[0] == "currentList":
-            server.send(data)
-            p_list = json.loads(res[1])
-            update_players(p_list)
 
 
-    server.close()
 
 def update_players(p_list):
     global PLAYER_LIST
@@ -184,20 +183,74 @@ def update_players(p_list):
             if p_list[i]["id"] != player.id:
                 PLAYER_LIST.append(PlayerPaddle(screensize, p_list[i]["id"]))
 
+
+def handle_server(server):
+    global PLAYER_LIST
+    data = b'ack;\r\n'
+
+    while True:
+        msg = server.recv(RECV_BUFF).decode().split(";")
+
+        if msg[0] == "newPlayer":
+            try:
+                server.sendall(data)
+                detail = json.loads(msg[1])
+                player = PlayerPaddle(screensize, detail["id"])
+                PLAYER_LIST.append(player)
+            except:
+                print("new player could not be created:", msg)
+        if msg[0] == "currentList":
+            try:
+                print("received list: ", msg[1])
+                server.sendall(data)
+                p_list = json.loads(msg[1])
+                update_players(p_list)
+            except:
+                print("current list could not be read:", msg)
+        elif msg[0] == "updateLocation":
+            try:
+                server.sendall(data)
+                detail = json.loads(msg[1])
+                player = next((player for player in PLAYER_LIST if player.getId() == detail["id"]))
+                player.update_local()
+            except:
+                print("something went wrong with msg", msg)
+
+    server.close()
+
 def main():
     global PLAYER_LIST
+    global RECV_BUFF
+
     #TODO: get host and port from a config file and possibly from settings
     server = socket(AF_INET, SOCK_STREAM)
     server.connect(('', 2115))
-    start_new_thread(handle_server ,(server,))
+
+    udp_server = socket(AF_INET, SOCK_DGRAM)
+
+
+    # Grabs a player from server instead of creating indiviudally
+    # Upon initial connection the server creates a player with an id and sends this to the server. 
+    # it's the first response and lets the new client know their client id
+    res = json.loads(server.recv(RECV_BUFF).decode())
+    player_id = res["id"] 
+    data = b'ack;\r\n'
+    server.sendall(data)
+
+    print("Loaded new player from server with id:", player_id)
+
+
+    # This start_new_therad function starts a thread and automatically closes it when the function is done
     running = True
 
     clock = pygame.time.Clock()
 
     pong = Pong(screensize)
 
-    player_paddle1 = PlayerPaddle(screensize, 1)
+    player_paddle1 = PlayerPaddle(screensize, player_id)
     PLAYER_LIST.append(player_paddle1)
+
+    print("player:", player_id, "created and added")
 
 
     pygame.display.set_caption('Pong')
@@ -208,6 +261,9 @@ def main():
 
     win = pygame.mixer.Sound(os.path.join('data/win.wav'))
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
+
+    start_new_thread(handle_server ,(server,))
+    
 
     while running: #Main game loop  
         if len(PLAYER_LIST) <= 1:
@@ -236,10 +292,11 @@ def main():
             # elif pong.ai_paddle_win == True:
             #             running = False
 
-            for player in PLAYER_LIST:
-                player.update()
 
+
+            player_paddle1.update(udp_server)
             pong.update()                             
+
 
             screen.fill(green)
             #draw vertical line for ping pong design
@@ -268,6 +325,7 @@ def main():
             lose.play()
 
     pygame.display.flip() 
+    server.close()
     pygame.time.delay(5000)
     pygame.quit()
 
