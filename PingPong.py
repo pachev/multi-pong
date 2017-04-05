@@ -126,14 +126,17 @@ class PlayerPaddle(object):
             self.centerx = 5
         self.height = 100
         self.width = 10
+        self.id = player
 
+        #Pygame box that paddle is drawn and refreshed on 
         self.rect = pygame.Rect(0, self.centery-int(self.height*0.5), self.width, self.height)
 
         self.color = white
         self.side = player % 2
 
+        # Speed and direction
         self.speed = 3
-        self.direction = 0 #don't want it to move on its own
+        self.direction = 0
                 
     def update(self):
         self.centery += self.direction*self.speed
@@ -158,7 +161,6 @@ def handle_server(server):
 
     while True:
         res = server.recv(1024).decode().split(";")
-        print("res", res)
         data = b'ack\r\n'
 
         if res[0] == "newPlayer":
@@ -166,8 +168,21 @@ def handle_server(server):
             detail = json.loads(res[1])
             player = PlayerPaddle(screensize, detail["id"])
             PLAYER_LIST.append(player)
+        if res[0] == "currentList":
+            server.send(data)
+            p_list = json.loads(res[1])
+            update_players(p_list)
+
 
     server.close()
+
+def update_players(p_list):
+    global PLAYER_LIST
+
+    for i in range(len(p_list)):
+        for player in PLAYER_LIST:
+            if p_list[i]["id"] != player.id:
+                PLAYER_LIST.append(PlayerPaddle(screensize, p_list[i]["id"]))
 
 def main():
     global PLAYER_LIST
@@ -183,6 +198,7 @@ def main():
 
     player_paddle1 = PlayerPaddle(screensize, 1)
     PLAYER_LIST.append(player_paddle1)
+
 
     pygame.display.set_caption('Pong')
 

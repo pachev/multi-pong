@@ -49,6 +49,7 @@ def main():
     global HOST
     global PORT
     global REMOTE_CLIENTS
+    global REMOTE_PLAYERS
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -71,7 +72,7 @@ def main():
 
     while True:
         try: 
-            ready_read, ready_write, in_erro = select.select(REMOTE_CLIENTS, [], [], 0)
+            ready_read, ready_write, in_error = select.select(REMOTE_CLIENTS, [], [], 0)
             for sock in ready_read:
                 #new connection received here
                 if sock == s:
@@ -82,6 +83,8 @@ def main():
                     player = Player(len(REMOTE_CLIENTS)-1)
                     REMOTE_PLAYERS.append(player)
                     broadcast_all(s,conn,("newPlayer;"+ json.dumps(player.get_info())).encode())
+                    cur_list = [player.get_info() for player in REMOTE_PLAYERS]
+                    broadcast_all(s,conn,("currentList;"+ json.dumps(cur_list)).encode())
                 #else it's an update message from a client
                 else:
                     try:
