@@ -28,7 +28,6 @@ class User:
         self.user = user
         self.name = random.choice(RANDOM_USERNAMES)
         self.addr = addr
-        # TODO: remove username when it's assigned but add it back to the list when user disconnects
         RANDOM_USERNAMES.remove(self.name)
 
     def get_name(self):
@@ -44,6 +43,7 @@ class User:
 def chat_server():
 
     global SOCKET_LIST
+    global RANDOM_USERNAMES
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -75,7 +75,7 @@ def chat_server():
                 print("[" + username + "] connected")
                 print("Client (%s, %s) connected" % user.get_addr())
                 sockfd.send(username.encode())
-                broadcast(server_socket, sockfd, "\n[" + username + "] entered our chatting room\n")
+                broadcast(server_socket, sockfd, "\n[" + username + "] entered the PONG game chat room!\n")
 
             # A message is received from the client (not a new connection)
             else:
@@ -90,12 +90,13 @@ def chat_server():
                     else:
                         if sock in SOCKET_LIST:
                             SOCKET_LIST.remove(sock)
-                            print("Client removed from list")
+                            RANDOM_USERNAMES.add(username)
+                            print("Client [" + username + "] removed from list")
 
-                        broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
+                        broadcast(server_socket, sock, "\n[" + username + "] is offline\n")
 
                 except:
-                    broadcast(server_socket, sock, "Client (%s, %s) is offline\n" % addr)
+                    broadcast(server_socket, sock, "\n[" + username + "] is offline\n")
                     continue
 
     server_socket.close()
