@@ -13,7 +13,7 @@ from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
 from socket import *
 from _thread import *
 
-HOST = ''   
+HOST = 'bluff.cs.fiu.edu'
 PORT = 2115
 
 #Initialize the game
@@ -235,7 +235,7 @@ def main():
 
     #TODO: get host and port from a config file and possibly from settings
     server = socket(AF_INET, SOCK_STREAM)
-    server.connect(('', 2115))
+    server.connect((HOST, PORT))
 
     udp_server = socket(AF_INET, SOCK_DGRAM)
 
