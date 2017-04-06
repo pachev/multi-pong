@@ -94,7 +94,7 @@ class Pong(object):
         # After updating send the information via udp to the server
         info = {"x": self.centerx, "y": self.centery, "id": self.id}
         data = "updateBallLocation;" +json.dumps(info) + "\r\n"
-        server.sendto(data.encode(),(HOST,PORT))
+        server.sendto(data.encode(), (HOST, GAME_PORT))
         self.rect.center = (self.centerx, self.centery)
         self.check_collison()
 
