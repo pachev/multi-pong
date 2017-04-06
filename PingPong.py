@@ -79,10 +79,12 @@ class Pong(object):
         self.player_paddle_win = False
         self.ai_paddle_win = False              
 
-    def update_local(self, x_new, y_new):
-        print("updating ball:")
+    def update_local(self, x_new, y_new, lscore, rscore):
         self.centerx = x_new
         self.centery = y_new
+
+        self.ai_score = lscore if lscore != self.ai_score else self.ai_score
+        self.player_score = rscore if rscore != self.player_score else self.player_score
 
         self.rect.center = (self.centerx, self.centery)
         self.check_collison()
@@ -90,16 +92,15 @@ class Pong(object):
     def update(self, server):
         self.centerx += self.direction[0]*self.speedx
         self.centery += self.direction[1]*self.speedy
-
-        # After updating send the information via udp to the server
-        info = {"x": self.centerx, "y": self.centery, "id": self.id}
-        data = "updateBallLocation;" +json.dumps(info) + "\r\n"
-        server.sendto(data.encode(), (HOST, GAME_PORT))
         self.rect.center = (self.centerx, self.centery)
-        self.check_collison()
+        self.check_collison(server)
 
-    def check_collison(self):
+
+    def check_collison(self, server=None):
         global PLAYER_LIST
+
+        remote = True if server else False
+
 
         sound = pygame.mixer.Sound(os.path.join('data/ping.wav'))
 
@@ -139,6 +140,19 @@ class Pong(object):
                         sound.play()
                         if self.ai_score == 10: # lose if the computer scores 15 points
                                 self.ai_paddle_win = True
+
+        if remote:
+            # After updating send the information via udp to the server
+            info = {
+                "x": self.centerx,
+                "y": self.centery,
+                "id": self.id,
+                "lscore": self.ai_score,
+                "rscore": self.player_score,
+            }
+            data = "updateBallLocation;" +json.dumps(info) + "\r\n"
+            server.sendto(data.encode(), (HOST, GAME_PORT))
+
 
     def render(self, screen):
         pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0)
@@ -253,7 +267,7 @@ def handle_server(server, pong):
             try:
                 server.sendall(data)
                 detail = json.loads(msg[1])
-                pong.update_local(detail["x"], detail["y"])
+                pong.update_local(detail["x"], detail["y"], detail["lscore"], detail["rscore"])
             except:
                 print("something went wrong with msg", msg)
 
@@ -270,9 +284,11 @@ def main():
 
     udp_server = socket(AF_INET, SOCK_DGRAM)
 
-    # Grabs a player from server instead of creating indiviudally
-    # Upon initial connection the server creates a player with an id and sends this to the server. 
-    # it's the first response and lets the new client know their client id
+    '''
+    Grabs a player from server instead of creating indiviudally
+    Upon initial connection the server creates a player with an id and sends this to the server. 
+    it's the first response and lets the new client know their client id
+    '''
     res = json.loads(server.recv(RECV_BUFF).decode())
     player_id = res["id"] 
     data = b'ack;\r\n'

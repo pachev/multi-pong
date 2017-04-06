@@ -84,10 +84,11 @@ def broadcast_location(info):
 #Updates the location of the player and lets the other players know
 def update_location_single(location, type):
     global REMOTE_PLAYERS
-    player = next((player for player in REMOTE_PLAYERS if player.get_info()["id"] == location["id"]))
-    player.update(location["x"], location["y"])
-
-    broadcast_location((type + json.dumps(location) + ";\r\n").encode())
+    if type == "updateLocation":
+        player = next((player for player in REMOTE_PLAYERS if player.get_info()["id"] == location["id"]))
+        player.update(location["x"], location["y"])
+    else:
+        broadcast_location((type + json.dumps(location) + ";\r\n").encode())
 
 
 def handle_udp(sock):
@@ -97,9 +98,9 @@ def handle_udp(sock):
         data, addr = sock.recvfrom(RECV_BUFF) # buffer size is 1024 bytes
         msg = data.decode().split(";")
         if msg[0] == "updateLocation":
-            update_location_single(json.loads(msg[1]), msg[0]+";")
+            update_location_single(json.loads(msg[1]), msg[0]+";\r\n")
         elif msg[0] == "updateBallLocation":
-            update_location_single(json.loads(msg[1]), msg[0]+";")
+            update_location_single(json.loads(msg[1]), msg[0]+";\r\n")
 
 
 def main():
