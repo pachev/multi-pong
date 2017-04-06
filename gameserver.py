@@ -52,8 +52,8 @@ def broadcast_all(serv_sock, sock,info):
                 socket.sendall(info)
             except:
                 print("error broadcast_all")
-                # socket.close()
-                # REMOTE_CLIENTS.remove(socket)
+                socket.close()
+                REMOTE_CLIENTS.remove(socket)
 
 #Function to boradcast to all players globally
 #TODO: Logic might need to change for here
@@ -166,8 +166,9 @@ def main():
                                 print ("received: ",res[1])
                         else:
                             #handles the case where our client has los a connection
+                            #TODO: Remove player as well. possibly player with socket 
                             sock.close()
-                            print("removing", sock.getsockname, "from list")
+                            print("removing", sock, "from list")
                             REMOTE_CLIENTS.remove(sock)
                     except:
                         print("data not received")

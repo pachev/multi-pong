@@ -122,10 +122,10 @@ class PlayerPaddle(object):
 
         if player % 2 == 0:
             self.centery = int(screensize[1]*0.5)
-            self.centerx = player * screensize[0]-5
+            self.centerx = screensize[0]- 5 + player
         else:
             self.centery = int(screensize[1]*0.5)
-            self.centerx = player * 5
+            self.centerx = player + 5
         self.height = 100
         self.width = 10
         self.id = player
@@ -139,9 +139,18 @@ class PlayerPaddle(object):
         # Speed and direction
         self.speed = 3
         self.direction = 0
-    def update_local(self):
-        self.centery += self.direction*self.speed
+
+
+    def update_local(self, ynew):
+        self.centery = ynew
         self.rect.center = (self.centerx, self.centery)
+
+        print("updated player:")
+        #make sure paddle does not go off screen
+        if self.rect.top < 0:
+                self.rect.top = 0
+        if self.rect.bottom > self.screensize[1]-1:
+                self.rect.bottom = self.screensize[1]-1 
 
     def getId(self):
         return self.id
@@ -178,10 +187,12 @@ class PlayerPaddle(object):
 def update_players(p_list):
     global PLAYER_LIST
 
-    for i in range(len(p_list)):
-        for player in PLAYER_LIST:
-            if p_list[i]["id"] != player.id:
-                PLAYER_LIST.append(PlayerPaddle(screensize, p_list[i]["id"]))
+    pids = [p.id for p in PLAYER_LIST]
+    for p in p_list:
+        if p["id"] not in pids:
+            PLAYER_LIST.append(PlayerPaddle(screensize, p["id"]))
+
+    print([player.id for player in PLAYER_LIST])
 
 
 def handle_server(server):
@@ -212,7 +223,7 @@ def handle_server(server):
                 server.sendall(data)
                 detail = json.loads(msg[1])
                 player = next((player for player in PLAYER_LIST if player.getId() == detail["id"]))
-                player.update_local()
+                player.update_local(detail["y"])
             except:
                 print("something went wrong with msg", msg)
 
