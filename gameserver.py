@@ -1,5 +1,7 @@
 # Game Server
-# Stuck: getting server to update location
+#TODO: remove player from room after the quit
+#
+
 
 import socket, select
 import json
@@ -11,27 +13,23 @@ UDP_CLIENTS = []
 REMOTE_PLAYERS = []
 RECV_BUFF = 1024
 
-HOST = ''   
+HOST = '0.0.0.0'
 PORT = 2115
  
 class Player:
     def __init__(self, player):
-        self.player = player
-        self.centerx= 0
-        self.centery = 0
+        self.id = player
+        self.x= 0
+        self.y = 0
         # Add random colors here to differentiate players
         self.color = 'white'
                 
     def update(self, x, y):
-        self.centerx = x
-        self.centery = y
+        self.x = x
+        self.y = y
 
     def get_info(self):
-        info = {}
-        info["id"] = self.player
-        info["x"] = self.centerx
-        info["y"] = self.centery
-        return info
+        return self.__dict__
 
 
 def send_single_update(sock,info):
@@ -84,12 +82,12 @@ def broadcast_location(info):
  
 
 #Updates the location of the player and lets the other players know
-def update_location_single(location):
+def update_location_single(location, type):
     global REMOTE_PLAYERS
     player = next((player for player in REMOTE_PLAYERS if player.get_info()["id"] == location["id"]))
     player.update(location["x"], location["y"])
 
-    broadcast_location(("updateLocation;" + json.dumps(location) + ";\r\n").encode())
+    broadcast_location((type + json.dumps(location) + ";\r\n").encode())
 
 
 def handle_udp(sock):
@@ -98,7 +96,10 @@ def handle_udp(sock):
     while True:
         data, addr = sock.recvfrom(RECV_BUFF) # buffer size is 1024 bytes
         msg = data.decode().split(";")
-        update_location_single(json.loads(msg[1]))
+        if msg[0] == "updateLocation":
+            update_location_single(json.loads(msg[1]), msg[0]+";")
+        elif msg[0] == "updateBallLocation":
+            update_location_single(json.loads(msg[1]), msg[0]+";")
 
 
 def main():
@@ -109,6 +110,9 @@ def main():
     global REMOTE_CLIENTS
     global UDP_CLIENTS
     global REMOTE_PLAYERS
+
+    #So far it's just one ball, this keeps track of it
+    ball = Player(1);
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -162,7 +166,7 @@ def main():
                         data = sock.recv(RECV_BUFF)
                         if data:
                             res = data.decode().split(";")
-                            if res[0] == "updateLocation":
+                            if res[0] == "removePlayer":
                                 print ("received: ",res[1])
                         else:
                             #handles the case where our client has los a connection

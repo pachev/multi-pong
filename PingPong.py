@@ -13,7 +13,7 @@ from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
 from socket import *
 from _thread import *
 
-HOST = 'bluff.cs.fiu.edu'
+HOST = ''
 PORT = 2115
 
 #Initialize the game
@@ -32,8 +32,9 @@ green = (0, 100, 00)
 red = (255, 0, 0)
 
 class Pong(object):
-    def __init__(self, screensize):
+    def __init__(self, screensize, id):
         self.screensize = screensize
+        self.id = id
 
         #place ball in the center
         self.centerx = int(screensize[0]*0.5) 
@@ -62,12 +63,29 @@ class Pong(object):
         self.player_paddle_win = False
         self.ai_paddle_win = False              
 
-    def update(self):
-        global PLAYER_LIST
+    def update_local(self, x_new, y_new):
+        print("updating ball:")
+        self.centerx = x_new
+        self.centery = y_new
+
+        self.rect.center = (self.centerx, self.centery)
+        self.check_collison()
+
+
+    def update(self, server):
         self.centerx += self.direction[0]*self.speedx
         self.centery += self.direction[1]*self.speedy
 
+        #After updating send the information via udp to the server
+        info = {"x": self.centerx, "y": self.centery, "id": self.id}
+        data = "updateBallLocation;" +json.dumps(info) + "\r\n"
+        server.sendto(data.encode(),(HOST,PORT))
         self.rect.center = (self.centerx, self.centery)
+        self.check_collison()
+
+
+    def check_collison(self):
+        global PLAYER_LIST
 
         sound = pygame.mixer.Sound(os.path.join('data/ping.wav'))
 
@@ -108,6 +126,7 @@ class Pong(object):
                         if self.ai_score == 10: #lose if the computer scores 15 points
                                 self.ai_paddle_win = True
 
+
     def render(self, screen):
         pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0)
         #creates black outline of the circle
@@ -141,11 +160,10 @@ class PlayerPaddle(object):
         self.direction = 0
 
 
-    def update_local(self, ynew):
-        self.centery = ynew
+    def update_local(self, y_new):
+        self.centery = y_new
         self.rect.center = (self.centerx, self.centery)
 
-        print("updated player:")
         #make sure paddle does not go off screen
         if self.rect.top < 0:
                 self.rect.top = 0
@@ -162,10 +180,7 @@ class PlayerPaddle(object):
         self.rect.center = (self.centerx, self.centery)
 
         #TODO: refractor, this is only for debugging
-        info = {}
-        info["x"] = self.centerx
-        info["y"] = self.centery
-        info["id"] = self.id
+        info = {"x": self.centerx, "y": self.centery, "id": self.id}
         data = "updateLocation;" +json.dumps(info) + "\r\n"
         server.sendto(data.encode(),(HOST,PORT))
 
@@ -195,7 +210,7 @@ def update_players(p_list):
     print([player.id for player in PLAYER_LIST])
 
 
-def handle_server(server):
+def handle_server(server, pong):
     global PLAYER_LIST
     data = b'ack;\r\n'
 
@@ -224,6 +239,13 @@ def handle_server(server):
                 detail = json.loads(msg[1])
                 player = next((player for player in PLAYER_LIST if player.getId() == detail["id"]))
                 player.update_local(detail["y"])
+            except:
+                print("something went wrong with msg", msg)
+        elif msg[0] == "updateBallLocation":
+            try:
+                server.sendall(data)
+                detail = json.loads(msg[1])
+                pong.update_local(detail["x"], detail["y"])
             except:
                 print("something went wrong with msg", msg)
 
@@ -255,8 +277,7 @@ def main():
     running = True
 
     clock = pygame.time.Clock()
-
-    pong = Pong(screensize)
+    pong = Pong(screensize, player_id)
 
     player_paddle1 = PlayerPaddle(screensize, player_id)
     PLAYER_LIST.append(player_paddle1)
@@ -273,7 +294,9 @@ def main():
     win = pygame.mixer.Sound(os.path.join('data/win.wav'))
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
 
-    start_new_thread(handle_server ,(server,))
+    # TODO: later when more balls are implemente add to a global lis
+    # remove pong argument
+    start_new_thread(handle_server ,(server,pong))
     
 
     while running: #Main game loop  
@@ -306,7 +329,7 @@ def main():
 
 
             player_paddle1.update(udp_server)
-            pong.update()                             
+            pong.update(udp_server)                             
 
 
             screen.fill(green)
