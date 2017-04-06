@@ -7,25 +7,41 @@ import sys, os, time
 import random
 import json
 
+
 from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
     K_LEFT, K_UP, K_RIGHT, KEYUP, K_LCTRL, K_RETURN, FULLSCREEN
 
 from socket import *
 from _thread import *
 
-HOST = ''
-PORT = 2115
 
-#Initialize the game
+HOST = ''
+GAME_PORT = 2115
+CHAT_PORT = 2129
+
+# Initialize the game
 pygame.init()
-screensize = (640, 480)
+
+screen_width = 680
+screen_length = 620
+
+screensize = (screen_width, screen_length)
+
+# Set the screen
 screen = pygame.display.set_mode(screensize)
+
+chat_screen_length = 200
+pong_screen_length = screen_length-chat_screen_length
+
+pong_screensize = (screen_width, pong_screen_length)
+chat_screensize = (screen_width, chat_screen_length)
+
 FPS = 200
 
 PLAYER_LIST = []
 RECV_BUFF = 1024
 
-#Define colors
+# Define colors
 black = (0, 0, 0)
 white = (255, 255, 255)
 green = (0, 100, 00)
@@ -36,20 +52,20 @@ class Pong(object):
         self.screensize = screensize
         self.id = id
 
-        #place ball in the center
+        # place ball in the center
         self.centerx = int(screensize[0]*0.5) 
         self.centery = int(screensize[1]*0.5)
 
         self.radius = 8
 
-        #create shape and sizes it
+        # create shape and sizes it
         self.rect = pygame.Rect(self.centerx-self.radius, 
-                self.centery-self.radius, 
-                self.radius*2, self.radius*2) 
+                                self.centery-self.radius,
+                                self.radius*2, self.radius*2)
 
         self.color = white
-        self.direction = [1,1] #current direction to the right and up
-        #list so we can access each individual part because it will change
+        self.direction = [1, 1] # current direction to the right and up
+        # list so we can access each individual part because it will change
 
         self.speedx = 2
         self.speedy = 5
@@ -71,36 +87,34 @@ class Pong(object):
         self.rect.center = (self.centerx, self.centery)
         self.check_collison()
 
-
     def update(self, server):
         self.centerx += self.direction[0]*self.speedx
         self.centery += self.direction[1]*self.speedy
 
-        #After updating send the information via udp to the server
+        # After updating send the information via udp to the server
         info = {"x": self.centerx, "y": self.centery, "id": self.id}
         data = "updateBallLocation;" +json.dumps(info) + "\r\n"
         server.sendto(data.encode(),(HOST,PORT))
         self.rect.center = (self.centerx, self.centery)
         self.check_collison()
 
-
     def check_collison(self):
         global PLAYER_LIST
 
         sound = pygame.mixer.Sound(os.path.join('data/ping.wav'))
 
-        #makes sure if ball hits top it comes back down
+        # makes sure if ball hits top it comes back down
         if self.rect.top <= 0: 
                 self.direction[1] = 1
         elif self.rect.bottom >= self.screensize[1]-1:
-                self.direction[1] = -1 #bounce up and down
+                self.direction[1] = -1 # bounce up and down
         elif self.rect.right >= self.screensize[0]-1: 
                 self.direction[0] = -1
         elif self.rect.left <= 0:
                 self.direction[0] = 1
 
-        #checks if the code above is true
-        if self.rect.right >=self.screensize[0]-1: #if it's greater than width -1
+        # checks if the code above is true
+        if self.rect.right >=self.screensize[0]-1: # if it's greater than width -1
                 self.hit_right_edge = True
         elif self.rect.left <= 0:
                 self.hit_left_edge = True
@@ -109,32 +123,31 @@ class Pong(object):
         elif self.rect.bottom >= self.screensize[1]-1:
                 self.hit_left_edge = True
 
-        #check for a collision between the rectangles
+        # check for a collision between the rectangles
         for player in PLAYER_LIST:
             if player.side == 1:
                 if self.rect.colliderect(player.rect):
                         self.direction[0] = -1
                         self.player_score += 1
                         sound.play()
-                        if self.player_score == 10: #win if you score 15 points
+                        if self.player_score == 10: # win if you score 15 points
                                 self.player_paddle_win = True   
             else:
                 if self.rect.colliderect(player.rect):
                         self.direction[0] = 1
                         self.ai_score += 1
                         sound.play()
-                        if self.ai_score == 10: #lose if the computer scores 15 points
+                        if self.ai_score == 10: # lose if the computer scores 15 points
                                 self.ai_paddle_win = True
-
 
     def render(self, screen):
         pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0)
-        #creates black outline of the circle
+        # creates black outline of the circle
         pygame.draw.circle(screen, black, self.rect.center, self.radius, 1)
 
 
 class PlayerPaddle(object):
-        #TODO: Add logic for different x positions of player paddles based on client number
+        # TODO: Add logic for different x positions of player paddles based on client number
 
     def __init__(self, screensize, player):
         self.screensize = screensize
@@ -149,7 +162,7 @@ class PlayerPaddle(object):
         self.width = 10
         self.id = player
 
-        #Pygame box that paddle is drawn and refreshed on 
+        # Pygame box that paddle is drawn and refreshed on
         self.rect = pygame.Rect(0, self.centery-int(self.height*0.5), self.width, self.height)
 
         self.color = white
@@ -158,7 +171,6 @@ class PlayerPaddle(object):
         # Speed and direction
         self.speed = 3
         self.direction = 0
-
 
     def update_local(self, y_new):
         self.centery = y_new
@@ -175,17 +187,16 @@ class PlayerPaddle(object):
                 
     def update(self,server):
         global HOST
-        global PORT
+        global GAME_PORT
         self.centery += self.direction*self.speed
         self.rect.center = (self.centerx, self.centery)
 
         #TODO: refractor, this is only for debugging
         info = {"x": self.centerx, "y": self.centery, "id": self.id}
         data = "updateLocation;" +json.dumps(info) + "\r\n"
-        server.sendto(data.encode(),(HOST,PORT))
+        server.sendto(data.encode(), (HOST, GAME_PORT))
 
-
-        #make sure paddle does not go off screen
+        # make sure paddle does not go off screen
         if self.rect.top < 0:
                 self.rect.top = 0
         if self.rect.bottom > self.screensize[1]-1:
@@ -194,9 +205,6 @@ class PlayerPaddle(object):
     def render(self,screen):
         pygame.draw.rect(screen, self.color, self.rect, 0)
         pygame.draw.rect(screen, black, self.rect, 1)
-
-
-
 
 
 def update_players(p_list):
@@ -251,16 +259,16 @@ def handle_server(server, pong):
 
     server.close()
 
+
 def main():
     global PLAYER_LIST
     global RECV_BUFF
 
-    #TODO: get host and port from a config file and possibly from settings
+    # TODO: get host and port from a config file and possibly from settings
     server = socket(AF_INET, SOCK_STREAM)
-    server.connect((HOST, PORT))
+    server.connect((HOST, GAME_PORT))
 
     udp_server = socket(AF_INET, SOCK_DGRAM)
-
 
     # Grabs a player from server instead of creating indiviudally
     # Upon initial connection the server creates a player with an id and sends this to the server. 
@@ -272,18 +280,16 @@ def main():
 
     print("Loaded new player from server with id:", player_id)
 
-
     # This start_new_therad function starts a thread and automatically closes it when the function is done
     running = True
 
     clock = pygame.time.Clock()
-    pong = Pong(screensize, player_id)
+    pong = Pong(pong_screensize, player_id)
 
-    player_paddle1 = PlayerPaddle(screensize, player_id)
+    player_paddle1 = PlayerPaddle(pong_screensize, player_id)
     PLAYER_LIST.append(player_paddle1)
 
     print("player:", player_id, "created and added")
-
 
     pygame.display.set_caption('Pong')
 
@@ -296,15 +302,14 @@ def main():
 
     # TODO: later when more balls are implemente add to a global lis
     # remove pong argument
-    start_new_thread(handle_server ,(server,pong))
-    
+    start_new_thread(handle_server , (server, pong))
 
-    while running: #Main game loop  
+    while running: # Main game loop
         if len(PLAYER_LIST) <= 1:
             continue
         else:
-            for event in pygame.event.get(): #handles events
-                if event.type == pygame.QUIT: #Makes sure we can quit the game
+            for event in pygame.event.get(): # handles events
+                if event.type == pygame.QUIT: # Makes sure we can quit the game
                         pygame.quit()
                         exit()
 
@@ -326,28 +331,31 @@ def main():
             # elif pong.ai_paddle_win == True:
             #             running = False
 
-
-
             player_paddle1.update(udp_server)
             pong.update(udp_server)                             
 
-
             screen.fill(green)
-            #draw vertical line for ping pong design
-            pygame.draw.line(screen, white, (320, 0), (320, 480), 5)         
+            # draw vertical line for ping pong design
+            pygame.draw.line(screen, white, (screen_width/2, 0), (screen_width/2, pong_screen_length), 5)
+
+            # draw horizontal line to divide the pong game from the chat
+            pygame.draw.line(screen, white, (0, pong_screen_length), (screen_width, pong_screen_length), 5)
+
+            # draw rectangle for the chat
+            pygame.draw.rect(screen, black, (0, pong_screen_length, screen_width, chat_screen_length), 0)
 
             for player in PLAYER_LIST:
                 player.render(screen)
 
-            pong.render(screen) #calls render function to the screen
+            pong.render(screen) # calls render function to the screen
 
             default_font = pygame.font.get_default_font()
             font = pygame.font.Font(default_font, 50)
             msg = font.render("   "+str(pong.ai_score)+"  Score  "+str(pong.player_score), True, white)
-            screen.blit(msg, (320, 0)) #adds score to the screen
+            screen.blit(msg, (320, 0)) # adds score to the screen
 
             clock.tick(FPS)
-            pygame.display.flip() #renders everything based on the update
+            pygame.display.flip() # renders everything based on the update
 
     if pong.player_paddle_win == True:
             txt = font.render(" You Won!!!!", True, white)
@@ -363,5 +371,5 @@ def main():
     pygame.time.delay(5000)
     pygame.quit()
 
-if __name__=='__main__':
+if __name__ == '__main__':
         main()
