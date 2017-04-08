@@ -162,7 +162,7 @@ class Pong(object):
 class PlayerPaddle(object):
         # TODO: Add logic for different x positions of player paddles based on client number
 
-    def __init__(self, screensize, player):
+    def __init__(self, screensize, player, color=white):
 
         self.screensize = screensize
         self.centery = int(screensize[1]*0.5)
@@ -180,7 +180,7 @@ class PlayerPaddle(object):
         # Pygame box that paddle is drawn and refreshed on
         self.rect = pygame.Rect(0, self.centery-int(self.height*0.5), self.width, self.height)
 
-        self.color = white
+        self.color = color
         self.side = player % 2
 
         # Speed and direction
@@ -228,7 +228,7 @@ def update_players(p_list):
     pids = [p.id for p in PLAYER_LIST]
     for p in p_list:
         if p["id"] not in pids:
-            PLAYER_LIST.append(PlayerPaddle(screensize, p["id"]))
+            PLAYER_LIST.append(PlayerPaddle(screensize, p["id"], p["color"]))
 
 
 def handle_server(server, pong):
@@ -242,7 +242,7 @@ def handle_server(server, pong):
             try:
                 server.sendall(data)
                 detail = json.loads(msg[1])
-                player = PlayerPaddle(screensize, detail["id"])
+                player = PlayerPaddle(screensize, detail["id"], detail["color"])
                 PLAYER_LIST.append(player)
             except:
                 print("new player could not be created:", msg)
@@ -302,6 +302,7 @@ def main():
     '''
     res = json.loads(server.recv(RECV_BUFF).decode())
     player_id = res["id"] 
+    play_color = res["color"]
     data = b'ack;\r\n'
     server.sendall(data)
 
@@ -313,7 +314,7 @@ def main():
     clock = pygame.time.Clock()
     pong = Pong(pong_screensize, player_id)
 
-    player_paddle1 = PlayerPaddle(pong_screensize, player_id)
+    player_paddle1 = PlayerPaddle(pong_screensize, player_id, play_color)
     PLAYER_LIST.append(player_paddle1)
 
     print("player:", player_id, "created and added")

@@ -3,6 +3,7 @@
 #
 
 
+import random
 import socket, select
 import json
 import sys
@@ -11,17 +12,31 @@ from _thread import *
 REMOTE_CLIENTS = []
 REMOTE_PLAYERS = []
 RECV_BUFF = 1024
+COLORS = [
+    (78, 103, 142), 
+    (142, 101, 78),
+    (198, 101, 182),
+    (101, 198, 197),
+    (244, 230, 73),
+    (178, 41, 23),
+    (247, 187, 113),
+    (185, 255, 173),
+    (17, 67, 84),
+    (244, 168, 176)
+]
 
 HOST = '0.0.0.0'
 PORT = 2115
  
 class Player:
     def __init__(self, player):
+        global COLORS
         self.id = player
         self.x= 0
         self.y = 0
         # Add random colors here to differentiate players
-        self.color = 'white'
+        self.color = random.choice(COLORS)
+        COLORS.remove(self.color)
                 
     def update(self, x, y):
         self.x = x
