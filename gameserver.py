@@ -9,7 +9,6 @@ import sys
 from _thread import *
 
 REMOTE_CLIENTS = []
-UDP_CLIENTS = []
 REMOTE_PLAYERS = []
 RECV_BUFF = 1024
 
@@ -32,63 +31,47 @@ class Player:
         return self.__dict__
 
 
-def send_single_update(sock,info):
-    global REMOTE_CLIENTS
-    try:
-        socket.sendall(info)
-    except:
-        socket.close()
-        REMOTE_CLIENTS.remove(socket)
-
 #Function to boradcast to all other players besides the server and current client
-def broadcast_all(serv_sock, sock,info):
+def broadcast_all(sock,info):
     global REMOTE_CLIENTS
 
-    for socket in REMOTE_CLIENTS:
-        if socket != sock and socket != serv_sock:
+    for socket in REMOTE_CLIENTS[1:]:
+        if socket != sock:
             try:
                 socket.sendall(info)
             except:
-                print("error broadcast_all")
                 socket.close()
+                i = REMOTE_CLIENTS.index(socket)
+                p = REMOTE_PLAYERS[i-1]
+                print("removing player", p.id, "from list")
                 REMOTE_CLIENTS.remove(socket)
+                REMOTE_PLAYERS.remove(p)
 
-#Function to boradcast to all players globally
-#TODO: Logic might need to change for here
-def broadcast_global(serv_sock, info):
+
+def broadcast_global(info):
     global REMOTE_CLIENTS
 
-    for socket in REMOTE_CLIENTS:
-        if socket != serv_sock:
-            try:
-                socket.sendall(info)
-            except:
-                print("error broadcast_global")
-                socket.close()
-                REMOTE_CLIENTS.remove(socket)
+    for socket in REMOTE_CLIENTS[1:]:
+        try:
+            socket.sendall(info)
+        except:
+            print("error broadcast_global")
+            socket.close()
+            i = REMOTE_CLIENTS.index(socket)
+            p = REMOTE_PLAYERS[i-1]
+            print("removing player", p.id, "from list")
+            REMOTE_CLIENTS.remove(socket)
+            REMOTE_PLAYERS.remove(p)
 
-def broadcast_location(info):
-    global REMOTE_CLIENTS
-
-    for socket in REMOTE_CLIENTS:
-        if socket != REMOTE_CLIENTS[0]:
-            try:
-                socket.sendall(info)
-            except:
-                print("error broadcast_global")
-                socket.close()
-                REMOTE_CLIENTS.remove(socket)
-
- 
 
 #Updates the location of the player and lets the other players know
-def update_location_single(location, type):
+def udp_to_tcp_update(location, type):
     global REMOTE_PLAYERS
     if type == "updateLocation":
         player = next((player for player in REMOTE_PLAYERS if player.get_info()["id"] == location["id"]))
         player.update(location["x"], location["y"])
     else:
-        broadcast_location((type + json.dumps(location) + ";\r\n").encode())
+        broadcast_global((type + json.dumps(location) + ";\r\n").encode())
 
 
 def handle_udp(sock):
@@ -98,9 +81,10 @@ def handle_udp(sock):
         data, addr = sock.recvfrom(RECV_BUFF) # buffer size is 1024 bytes
         msg = data.decode().split(";")
         if msg[0] == "updateLocation":
-            update_location_single(json.loads(msg[1]), msg[0]+";\r\n")
+            udp_to_tcp_update(json.loads(msg[1]), msg[0]+";\r\n")
         elif msg[0] == "updateBallLocation":
-            update_location_single(json.loads(msg[1]), msg[0]+";\r\n")
+            udp_to_tcp_update(json.loads(msg[1]), msg[0]+";\r\n")
+
 
 
 def main():
@@ -109,7 +93,6 @@ def main():
     global PORT
     global RECV_BUFF
     global REMOTE_CLIENTS
-    global UDP_CLIENTS
     global REMOTE_PLAYERS
 
     #So far it's just one ball, this keeps track of it
@@ -137,10 +120,8 @@ def main():
     print("server has started and listening")
 
 
-
     while True:
         try: 
-            
             ready_read, ready_write, in_error = select.select(REMOTE_CLIENTS, [], [], 0)
             for sock in ready_read:
                 #new connection received here
@@ -151,33 +132,39 @@ def main():
 
                     player = Player(len(REMOTE_CLIENTS)-1) #don't count the main server socket
                     REMOTE_PLAYERS.append(player)
+                    REMOTE_CLIENTS.append(conn)
 
                     print("player created and added to list")
-
                     conn.send(json.dumps(player.get_info()).encode())
-
                     print("initial player sent")
-                    broadcast_all(s,conn,("newPlayer;"+ json.dumps(player.get_info()) +";\r\n").encode())
+                    broadcast_all(conn,("newPlayer;"+ json.dumps(player.get_info()) +";\r\n").encode())
+
                     cur_list = [player.get_info() for player in REMOTE_PLAYERS]
-                    REMOTE_CLIENTS.append(conn)
-                    broadcast_global(s,("currentList;"+ json.dumps(cur_list) + ";\r\n").encode())
+                    broadcast_global(("currentList;"+ json.dumps(cur_list) + ";\r\n").encode())
                 #else it's an update message from a client
                 else:
                     try:
                         data = sock.recv(RECV_BUFF)
                         if data:
                             res = data.decode().split(";")
-                            if res[0] == "removePlayer":
+                            if res[0] == "combo;":
                                 print ("received: ",res[1])
                         else:
                             #handles the case where our client has los a connection
-                            #TODO: Remove player as well. possibly player with socket 
                             sock.close()
-                            print("removing", sock, "from list")
+
+                            i = REMOTE_CLIENTS.index(sock)
+                            p = REMOTE_PLAYERS[i-1]
+
+                            print("removing player", p.id, "from list")
+                            broadcast_global(("removePlayer;"+ json.dumps(p.get_info()) + ";\r\n").encode())
+
+                            REMOTE_PLAYERS.remove(p)
                             REMOTE_CLIENTS.remove(sock)
                     except:
                         print("data not received")
                         continue
+
         except KeyboardInterrupt:
             print("Closing server")
             for sock in REMOTE_CLIENTS:

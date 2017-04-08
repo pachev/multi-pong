@@ -1,6 +1,5 @@
-## Forked from https://github.com/smoross/Pygame b
+## Forked from https://github.com/smoross/Pygame 
 ## a game from Samantha Moross
-
 
 import pygame
 import sys, os, time
@@ -164,16 +163,18 @@ class PlayerPaddle(object):
         # TODO: Add logic for different x positions of player paddles based on client number
 
     def __init__(self, screensize, player):
+
         self.screensize = screensize
+        self.centery = int(screensize[1]*0.5)
 
         if player % 2 == 0:
-            self.centery = int(screensize[1]*0.5)
-            self.centerx = screensize[0]- 5 + player
+            self.centerx = screensize[0] - (5 + (player * 30))
         else:
-            self.centery = int(screensize[1]*0.5)
-            self.centerx = player + 5
-        self.height = 100
-        self.width = 10
+            self.centerx = (player * 30) + 5 if player > 1 else 5
+
+        self.height = 50
+        self.width = 8
+
         self.id = player
 
         # Pygame box that paddle is drawn and refreshed on
@@ -205,9 +206,9 @@ class PlayerPaddle(object):
         self.centery += self.direction*self.speed
         self.rect.center = (self.centerx, self.centery)
 
-        #TODO: refractor, this is only for debugging
         info = {"x": self.centerx, "y": self.centery, "id": self.id}
         data = "updateLocation;" +json.dumps(info) + "\r\n"
+
         server.sendto(data.encode(), (HOST, GAME_PORT))
 
         # make sure paddle does not go off screen
@@ -228,8 +229,6 @@ def update_players(p_list):
     for p in p_list:
         if p["id"] not in pids:
             PLAYER_LIST.append(PlayerPaddle(screensize, p["id"]))
-
-    print([player.id for player in PLAYER_LIST])
 
 
 def handle_server(server, pong):
@@ -263,6 +262,14 @@ def handle_server(server, pong):
                 player.update_local(detail["y"])
             except:
                 print("something went wrong with msg", msg)
+        elif msg[0] == "removePlayer":
+            try:
+                server.sendall(data)
+                detail = json.loads(msg[1])
+                player = next((player for player in PLAYER_LIST if player.getId() == detail["id"]))
+                PLAYER_LIST.remove(player)
+            except:
+                print("could not remove stupid player")
         elif msg[0] == "updateBallLocation":
             try:
                 server.sendall(data)
@@ -280,7 +287,11 @@ def main():
 
     # TODO: get host and port from a config file and possibly from settings
     server = socket(AF_INET, SOCK_STREAM)
-    server.connect((HOST, GAME_PORT))
+    try:
+        server.connect((HOST, GAME_PORT))
+    except:
+        print("Could not connect to server")
+        sys.exit(1)
 
     udp_server = socket(AF_INET, SOCK_DGRAM)
 
