@@ -1,14 +1,16 @@
 # Game Server
-#TODO: remove player from room after the quit
-#
-
 
 import random
 import socket, select
 import json
 import sys
 from _thread import *
+from ball import Pong
+from pygame.locals import Rect
+from pygame import time as gametime
 
+
+FPS = 200
 REMOTE_CLIENTS = []
 REMOTE_PLAYERS = []
 RECV_BUFF = 1024
@@ -25,15 +27,28 @@ COLORS = [
     (244, 168, 176)
 ]
 
-HOST = '0.0.0.0'
+HOST = ''
 PORT = 2115
+BALL_PORT = 2116
+
  
 class Player:
     def __init__(self, player):
+        #TODO: pull this globally
+        screensize = (680,420)
+
         global COLORS
         self.id = player
-        self.x= 0
-        self.y = 0
+        self.y = int(screensize[1]*0.5)
+        self.side = player % 2
+
+        if self.side == 0:
+            self.x = screensize[0] - (5 + (player * 30))
+        else:
+            self.x = (player * 30) + 5 if player > 1 else 5
+
+        self.rect = Rect(0, self.y-(50 * 0.5), 8, 50)
+
         # Add random colors here to differentiate players
         self.color = random.choice(COLORS)
         COLORS.remove(self.color)
@@ -41,9 +56,16 @@ class Player:
     def update(self, x, y):
         self.x = x
         self.y = y
+        self.rect.center = (self.centerx, self.centery)
 
     def get_info(self):
-        return self.__dict__
+        return {
+            "id":self.id,
+            "x":self.x,
+            "y":self.y,
+            "side":self.side,
+            "color":self.color,
+        }
 
 
 #Function to boradcast to all other players besides the server and current client
@@ -101,6 +123,19 @@ def handle_udp(sock):
             udp_to_tcp_update(json.loads(msg[1]), msg[0]+";\r\n")
 
 
+def handle_ball(ball):
+    global REMOTE_PLAYERS
+    global HOST
+    global BALL_PORT
+    server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    clock = gametime.Clock()
+
+
+    while True:
+        ball.update(REMOTE_PLAYERS)
+        info = "updateBallLocation;" + json.dumps(ball.get_info()) +";\r\n"
+        server.sendto(info.encode(), (HOST, BALL_PORT))
+        clock.tick(FPS)
 
 def main():
      
@@ -110,8 +145,6 @@ def main():
     global REMOTE_CLIENTS
     global REMOTE_PLAYERS
 
-    #So far it's just one ball, this keeps track of it
-    ball = Player(1);
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -127,8 +160,12 @@ def main():
         print ('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
         sys.exit()
          
+    #TODO: This has to change in case gameserver is ran seperately from PingPong
+    pong_screensize = (680,420)
+    ball = Pong(pong_screensize,1) 
     
     start_new_thread(handle_udp, (udp_server, ))
+    start_new_thread(handle_ball, (ball,))
      
     #Start listening on socket
     s.listen(5)
@@ -146,11 +183,13 @@ def main():
                     
 
                     player = Player(len(REMOTE_CLIENTS)-1) #don't count the main server socket
-                    REMOTE_PLAYERS.append(player)
-                    REMOTE_CLIENTS.append(conn)
 
                     print("player created and added to list")
-                    conn.send(json.dumps(player.get_info()).encode())
+                    package = json.dumps([player.get_info(), ball.get_info()])
+                    conn.sendall(package.encode())
+
+                    REMOTE_PLAYERS.append(player)
+                    REMOTE_CLIENTS.append(conn)
                     print("initial player sent")
                     broadcast_all(conn,("newPlayer;"+ json.dumps(player.get_info()) +";\r\n").encode())
 
