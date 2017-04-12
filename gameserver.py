@@ -124,7 +124,6 @@ def handle_udp(sock):
 
 
 def handle_ball(ball):
-    global REMOTE_PLAYERS
     global HOST
     global BALL_PORT
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -132,9 +131,11 @@ def handle_ball(ball):
 
 
     while True:
+        global REMOTE_PLAYERS
         ball.update(REMOTE_PLAYERS)
         info = "updateBallLocation;" + json.dumps(ball.get_info()) +";\r\n"
-        server.sendto(info.encode(), (HOST, BALL_PORT))
+        # server.sendto(info.encode(), (HOST, BALL_PORT))
+        broadcast_global(info.encode())
         clock.tick(FPS)
 
 def main():

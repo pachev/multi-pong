@@ -65,16 +65,17 @@ class Pong(object):
         for player in player_list:
             if player.side == 1:
                 if self.rect.colliderect(player.rect):
-                        self.direction[0] = -1
-                        self.player_score += 1
-                        if self.player_score == 10: # win if you score 15 points
-                                self.player_paddle_win = True   
+                    print("checking player collision")
+                    self.direction[0] = -1
+                    self.player_score += 1
+                    if self.player_score == 10: # win if you score 15 points
+                        self.player_paddle_win = True   
             else:
                 if self.rect.colliderect(player.rect):
-                        self.direction[0] = 1
-                        self.ai_score += 1
-                        if self.ai_score == 10: # lose if the computer scores 15 points
-                                self.ai_paddle_win = True
+                    self.direction[0] = 1
+                    self.ai_score += 1
+                    if self.ai_score == 10: # lose if the computer scores 15 points
+                        self.ai_paddle_win = True
     def get_info(self):
         info = {
             "id": self.id,

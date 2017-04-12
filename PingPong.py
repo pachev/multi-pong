@@ -78,8 +78,6 @@ class Pong(object):
         # creates black outline of the circle
         pygame.draw.circle(screen, black, self.rect.center, self.radius, 1)
 
-
-
 def update_players(p_list):
     global PLAYER_LIST
 
@@ -98,7 +96,6 @@ def handle_ball(server, pong):
         if msg[0] == "updateLocation":
             print("located")
         elif msg[0] == "updateBallLocation":
-            print("ball")
             try:
                 detail = json.loads(msg[1])
                 pong.update(
@@ -111,7 +108,7 @@ def handle_ball(server, pong):
                 print("ball error", msg)
 
 
-def handle_server(server):
+def handle_server(server, pong):
     global PLAYER_LIST
     data = b'ack;\r\n'
 
@@ -150,6 +147,18 @@ def handle_server(server):
                 PLAYER_LIST.remove(player)
             except:
                 print("could not remove stupid player")
+        elif msg[0] == "updateBallLocation":
+            try:
+                server.sendall(data)
+                detail = json.loads(msg[1])
+                pong.update(
+                    detail["x"],
+                    detail["y"],
+                    detail["lscore"],
+                    detail["rscore"],
+                )
+            except Exception as e:
+                print("ball error", e)
 
     server.close()
 
@@ -168,7 +177,7 @@ def main():
 
     try:
         server.connect((HOST, GAME_PORT))
-        ball_server.bind((HOST,BALL_PORT))
+        # ball_server.bind((HOST,BALL_PORT))
     except error as msg:
         print("Could not connect to server", msg)
         sys.exit(1)
@@ -214,14 +223,12 @@ def main():
     win = pygame.mixer.Sound(os.path.join('data/win.wav'))
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
 
-    # TODO: later when more balls are implemente add to a global lis
-    start_new_thread(handle_server , (server,))
-    start_new_thread(handle_ball, (ball_server, pong))
+    start_new_thread(handle_server , (server,pong))
 
     while running: # Main game loop
-        # if len(PLAYER_LIST) <= 1:
-        #     continue
-        # else:
+        if len(PLAYER_LIST) <= 1:
+            continue
+        else:
             for event in pygame.event.get(): # handles events
                 if event.type == pygame.QUIT: # Makes sure we can quit the game
                         pygame.quit()
