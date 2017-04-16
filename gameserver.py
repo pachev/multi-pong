@@ -56,7 +56,7 @@ class Player:
     def update(self, x, y):
         self.x = x
         self.y = y
-        self.rect.center = (self.centerx, self.centery)
+        self.rect.center = (self.x, self.y)
 
     def get_info(self):
         return {
@@ -128,7 +128,6 @@ def handle_ball(ball):
     global BALL_PORT
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     clock = gametime.Clock()
-
 
     while True:
         global REMOTE_PLAYERS
