@@ -16,6 +16,7 @@ from _thread import *
 ## Local game imports
 from paddle import PlayerPaddle
 
+import eztext
 
 HOST = ''
 GAME_PORT = 2115
@@ -39,6 +40,8 @@ pong_screen_length = screen_length-chat_screen_length
 pong_screensize = (screen_width, pong_screen_length)
 chat_screensize = (screen_width, chat_screen_length)
 
+chat_font_size = 20
+
 FPS = 200
 
 PLAYER_LIST = []
@@ -49,6 +52,7 @@ black = (0, 0, 0)
 white = (255, 255, 255)
 green = (0, 100, 00)
 red = (255, 0, 0)
+
 
 class Pong(object):
     def __init__(self, screensize, id, x, y, lscore, rscore):
@@ -78,6 +82,7 @@ class Pong(object):
         # creates black outline of the circle
         pygame.draw.circle(screen, black, self.rect.center, self.radius, 1)
 
+
 def update_players(p_list):
     global PLAYER_LIST
 
@@ -85,6 +90,7 @@ def update_players(p_list):
     for p in p_list:
         if p["id"] not in pids:
             PLAYER_LIST.append(PlayerPaddle(screensize, p["id"], p["color"]))
+
 
 def handle_ball(server, pong):
     global RECV_BUFF
@@ -170,13 +176,17 @@ def main():
     # TODO: get host and port from a config file and possibly from settings
     server = socket(AF_INET, SOCK_STREAM)
 
-    #player socket stream: To change later
+    # chat_server = socket(AF_INET, SOCK_STREAM)
+    # chat_server.settimeout(2)
+
+    # player socket stream: To change later
     udp_server = socket(AF_INET, SOCK_DGRAM)
     # ball socket stream: may remain
     ball_server = socket(AF_INET, SOCK_DGRAM)
 
     try:
         server.connect((HOST, GAME_PORT))
+        # chat_server.connect((HOST, CHAT_PORT))
         # ball_server.bind((HOST,BALL_PORT))
     except error as msg:
         print("Could not connect to server", msg)
@@ -190,7 +200,8 @@ def main():
     '''
     res = json.loads(server.recv(RECV_BUFF).decode())
     player_id = res[0]["id"] 
-    play_color = res[0]["color"]
+    player_color = res[0]["color"]
+    player_name = res[0]["name"]
     data = b'ack;\r\n'
     server.sendall(data)
 
@@ -209,12 +220,12 @@ def main():
         res[1]["rscore"],
     )
 
-    player_paddle1 = PlayerPaddle(pong_screensize, player_id, play_color)
+    player_paddle1 = PlayerPaddle(pong_screensize, player_id, player_color)
     PLAYER_LIST.append(player_paddle1)
 
     print("player:", player_id, "created and added")
 
-    pygame.display.set_caption('Pong')
+    pygame.display.set_caption('Multi Pong')
 
     pygame.mixer.music.load(os.path.join('data/ping.wav'))
     pygame.mixer.music.load(os.path.join('data/win.wav'))
@@ -223,14 +234,20 @@ def main():
     win = pygame.mixer.Sound(os.path.join('data/win.wav'))
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
 
-    start_new_thread(handle_server , (server,pong))
+    start_new_thread(handle_server, (server, pong))
 
-    while running: # Main game loop
+    chat_input = eztext.Input(y=screen_length-chat_font_size,
+                              maxlength=screen_width,
+                              color=player_color,
+                              font=pygame.font.Font("data/cour.ttf", chat_font_size),
+                              prompt="["+player_name+"]: ")
+
+    while running:  # Main game loop
         if len(PLAYER_LIST) <= 1:
             continue
         else:
-            for event in pygame.event.get(): # handles events
-                if event.type == pygame.QUIT: # Makes sure we can quit the game
+            for event in pygame.event.get():  # handles events
+                if event.type == pygame.QUIT:  # Makes sure we can quit the game
                         pygame.quit()
                         exit()
 
@@ -260,17 +277,23 @@ def main():
             pygame.draw.rect(screen, black, (0, pong_screen_length, screen_width, chat_screen_length), 0)
 
             for player in PLAYER_LIST:
+                # print(player)
                 player.render(screen)
 
-            pong.render(screen) # calls render function to the screen
+            pong.render(screen)  # calls render function to the screen
 
             default_font = pygame.font.get_default_font()
             font = pygame.font.Font(default_font, 50)
+
             msg = font.render("   "+str(pong.lscore)+"  Score  "+str(pong.rscore), True, white)
-            screen.blit(msg, (320, 0)) # adds score to the screen
+            screen.blit(msg, (320, 0))  # adds score to the screen
+
+            events = pygame.event.get()
+            chat_input.update(events)
+            chat_input.draw(screen)
 
             clock.tick(FPS)
-            pygame.display.flip() # renders everything based on the update
+            pygame.display.flip()  # renders everything based on the update
 
     pygame.display.flip() 
     server.close()
