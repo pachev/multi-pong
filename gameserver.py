@@ -26,18 +26,33 @@ COLORS = [
     (17, 67, 84),
     (244, 168, 176)
 ]
+USERNAMES = [
+    "TalkativeLug",
+    "FaithfulWeirdo",
+    "MeagerSucker",
+    "ForthrightNerd",
+    "ElderlyCheater",
+    "RadiantJerk",
+    "MediocreNobody",
+    "HandmadeDeadbeat",
+    "RapidSicko",
+    "UnequalFool"
+]
 
 HOST = ''
 PORT = 2115
 BALL_PORT = 2116
+CHAT_PORT = 2129
 
  
 class Player:
     def __init__(self, player):
-        #TODO: pull this globally
-        screensize = (680,420)
+        # TODO: pull this globally
+        screensize = (680, 420)
 
         global COLORS
+        global USERNAMES
+
         self.id = player
         self.y = int(screensize[1]*0.5)
         self.side = player % 2
@@ -52,6 +67,8 @@ class Player:
         # Add random colors here to differentiate players
         self.color = random.choice(COLORS)
         COLORS.remove(self.color)
+        self.name = random.choice(USERNAMES)
+        USERNAMES.remove(self.name)
                 
     def update(self, x, y):
         self.x = x
@@ -65,10 +82,11 @@ class Player:
             "y":self.y,
             "side":self.side,
             "color":self.color,
+            "name":self.name
         }
 
 
-#Function to boradcast to all other players besides the server and current client
+# Function to broadcast to all other players besides the server and current client
 def broadcast_all(sock,info):
     global REMOTE_CLIENTS
 
@@ -101,7 +119,7 @@ def broadcast_global(info):
             REMOTE_PLAYERS.remove(p)
 
 
-#Updates the location of the player and lets the other players know
+# Updates the location of the player and lets the other players know
 def udp_to_tcp_update(location, type):
     global REMOTE_PLAYERS
     if type == "updateLocation":
@@ -137,52 +155,65 @@ def handle_ball(ball):
         broadcast_global(info.encode())
         clock.tick(FPS)
 
+
 def main():
      
     global HOST
     global PORT
+    # global CHAT_PORT
     global RECV_BUFF
     global REMOTE_CLIENTS
     global REMOTE_PLAYERS
 
-
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+    # chat_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # chat_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
     udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
     REMOTE_CLIENTS.append(s)
+    # REMOTE_CLIENTS.append(chat_server)
      
     #Bind socket to local host and port
     try:
-        udp_server.bind((HOST,PORT))
+        udp_server.bind((HOST, PORT))
         s.bind((HOST, PORT))
+        # chat_server.bind((HOST, CHAT_PORT))
     except socket.error as msg:
-        print ('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
+        print('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
         sys.exit()
          
-    #TODO: This has to change in case gameserver is ran seperately from PingPong
-    pong_screensize = (680,420)
-    ball = Pong(pong_screensize,1) 
+    # TODO: This has to change in case gameserver is ran seperately from PingPong
+    pong_screensize = (680, 420)
+    ball = Pong(pong_screensize, 1)
     
     start_new_thread(handle_udp, (udp_server, ))
-    start_new_thread(handle_ball, (ball,))
+    start_new_thread(handle_ball, (ball, ))
      
-    #Start listening on socket
+    # Start listening on socket
     s.listen(5)
-    print("server has started and listening")
+    # chat_server.listen(5)
 
+    print("server has started and listening")
 
     while True:
         try: 
             ready_read, ready_write, in_error = select.select(REMOTE_CLIENTS, [], [], 0)
             for sock in ready_read:
-                #new connection received here
+
+                # if sock == chat_server:
+                #     conn, addr = chat_server.accept()
+                #     REMOTE_CLIENTS.append(conn)
+
+
+                # new connection received here
                 if sock == s:
                     conn, addr = s.accept()
-                    print ("Client", addr[0], "connected on", addr[1])
-                    
+                    print("Client", addr[0], "connected on", addr[1])
 
-                    player = Player(len(REMOTE_CLIENTS)-1) #don't count the main server socket
+                    player = Player(len(REMOTE_CLIENTS)-1)  # don't count the main server socket
 
                     print("player created and added to list")
                     package = json.dumps([player.get_info(), ball.get_info()])
@@ -202,7 +233,7 @@ def main():
                         if data:
                             res = data.decode().split(";")
                             if res[0] == "combo;":
-                                print ("received: ",res[1])
+                                print("received: ",res[1])
                         else:
                             #handles the case where our client has los a connection
                             sock.close()
@@ -220,6 +251,7 @@ def main():
                         continue
 
         except KeyboardInterrupt:
+
             print("Closing server")
             for sock in REMOTE_CLIENTS:
                 sock.close()
