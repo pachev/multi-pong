@@ -6,9 +6,7 @@ from tkinter import *
 from chatbox import *
 import pygame
 import sys, os, time
-import random
 import json
-import queue as queue
 
 from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
     K_LEFT, K_UP, K_RIGHT, KEYUP, K_LCTRL, K_RETURN, FULLSCREEN
@@ -20,20 +18,24 @@ from _thread import *
 ## Local game imports
 from paddle import PlayerPaddle
 
-import eztext
-
 HOST = ''
 GAME_PORT = 2115
 BALL_PORT = 2116
 
-# Initialize the game
-pygame.init()
+
 
 
 window = tk.Tk()
+embed = tk.Frame(window, width = 680, height = 500) #creates embed frame for pygame window
+embed.grid(columnspan = (600), rowspan = 500) # Adds grid
+embed.pack(side = LEFT) #packs window to the left
+os.environ['SDL_WINDOWID'] = str(embed.winfo_id())
 
-window.geometry('340x620+680+0')
+
+# window.geometry('340x620+680+0')
 window.title("Pong Chat")
+# Initialize the game
+pygame.init()
 
 screen_width = 680
 screen_length = 620
