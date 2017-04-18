@@ -9,6 +9,9 @@ from ball import Pong
 from pygame.locals import Rect
 from pygame import time as gametime
 
+screen_width = 680
+screen_length = 620
+screensize = (screen_width, screen_length)
 
 FPS = 200
 REMOTE_CLIENTS = []
@@ -186,8 +189,7 @@ def main():
         sys.exit()
          
     # TODO: This has to change in case gameserver is ran seperately from PingPong
-    pong_screensize = (680, 420)
-    ball = Pong(pong_screensize, 1)
+    ball = Pong(screensize, 1)
     
     start_new_thread(handle_udp, (udp_server, ))
     start_new_thread(handle_ball, (ball, ))
@@ -232,8 +234,11 @@ def main():
                         data = sock.recv(RECV_BUFF)
                         if data:
                             res = data.decode().split(";")
-                            if res[0] == "combo;":
+                            if res[0] == "combo":
                                 print("received: ",res[1])
+                            elif res[0] == "sentMessage":
+                                msg = "receivedMessage;" + res[1] + ';' + res[2]+';\r\n'
+                                broadcast_all(sock,msg.encode())
                         else:
                             #handles the case where our client has los a connection
                             sock.close()

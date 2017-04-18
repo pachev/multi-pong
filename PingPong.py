@@ -1,10 +1,14 @@
 ## Forked from https://github.com/smoross/Pygame 
 ## a game from Samantha Moross
 
+import tkinter as tk
+from tkinter import *
+from chatbox import *
 import pygame
 import sys, os, time
 import random
 import json
+import queue as queue
 
 from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
     K_LEFT, K_UP, K_RIGHT, KEYUP, K_LCTRL, K_RETURN, FULLSCREEN
@@ -20,26 +24,27 @@ import eztext
 
 HOST = ''
 GAME_PORT = 2115
-CHAT_PORT = 2129
 BALL_PORT = 2116
 
 # Initialize the game
 pygame.init()
 
+
+window = tk.Tk()
+
+window.geometry('340x620+680+0')
+window.title("Pong Chat")
+
 screen_width = 680
 screen_length = 620
-
 screensize = (screen_width, screen_length)
+
 
 # Set the screen
 screen = pygame.display.set_mode(screensize)
 
-chat_screen_length = 200
-pong_screen_length = screen_length-chat_screen_length
 
-pong_screensize = (screen_width, pong_screen_length)
-chat_screensize = (screen_width, chat_screen_length)
-
+chatbox = Chatbox(window)
 chat_font_size = 20
 
 FPS = 200
@@ -114,7 +119,8 @@ def handle_ball(server, pong):
                 print("ball error", msg)
 
 
-def handle_server(server, pong):
+def handle_server(queue,server, pong):
+    global screen
     global PLAYER_LIST
     data = b'ack;\r\n'
 
@@ -123,23 +129,21 @@ def handle_server(server, pong):
 
         if msg[0] == "newPlayer":
             try:
-                server.sendall(data)
                 detail = json.loads(msg[1])
                 player = PlayerPaddle(screensize, detail["id"], detail["color"])
                 PLAYER_LIST.append(player)
+                queue.append(["SERVER", "New player "+ detail["name"] + " has arrived."])
             except:
                 print("new player could not be created:", msg)
         if msg[0] == "currentList":
             try:
                 print("received list: ", msg[1])
-                server.sendall(data)
                 p_list = json.loads(msg[1])
                 update_players(p_list)
             except:
                 print("current list could not be read:", msg)
         elif msg[0] == "updateLocation":
             try:
-                server.sendall(data)
                 detail = json.loads(msg[1])
                 player = next((player for player in PLAYER_LIST if player.getId() == detail["id"]))
                 player.update_local(detail["y"])
@@ -147,7 +151,6 @@ def handle_server(server, pong):
                 print("something went wrong with msg", msg)
         elif msg[0] == "removePlayer":
             try:
-                server.sendall(data)
                 detail = json.loads(msg[1])
                 player = next((player for player in PLAYER_LIST if player.getId() == detail["id"]))
                 PLAYER_LIST.remove(player)
@@ -155,7 +158,6 @@ def handle_server(server, pong):
                 print("could not remove stupid player")
         elif msg[0] == "updateBallLocation":
             try:
-                server.sendall(data)
                 detail = json.loads(msg[1])
                 pong.update(
                     detail["x"],
@@ -165,13 +167,22 @@ def handle_server(server, pong):
                 )
             except Exception as e:
                 print("ball error", e)
+        elif msg[0] == "receivedMessage":
+            global chatbox
+            try:
+                #Appends the message to the queue in main thread to avoid tkinter threadign error
+                queue.append([msg[1], msg[2]]);
+            except Exception as e:
+                print("Chat Error", e)
 
     server.close()
+
 
 
 def main():
     global PLAYER_LIST
     global RECV_BUFF
+    msg_queue = []
 
     # TODO: get host and port from a config file and possibly from settings
     server = socket(AF_INET, SOCK_STREAM)
@@ -207,12 +218,17 @@ def main():
 
     print("Loaded new player from server with id:", player_id)
 
+    def command(txt):
+        print(txt)
+        msg = 'sentMessage;'+ player_name +';'+txt+';\r\n'
+        server.sendall(msg.encode())
+
     # This start_new_therad function starts a thread and automatically closes it when the function is done
     running = True
 
     clock = pygame.time.Clock()
     pong = Pong(
-        pong_screensize, 
+        screensize, 
         res[1]["id"],
         res[1]["x"],
         res[1]["y"],
@@ -220,7 +236,7 @@ def main():
         res[1]["rscore"],
     )
 
-    player_paddle1 = PlayerPaddle(pong_screensize, player_id, player_color)
+    player_paddle1 = PlayerPaddle(screensize, player_id, player_color)
     PLAYER_LIST.append(player_paddle1)
 
     print("player:", player_id, "created and added")
@@ -234,16 +250,18 @@ def main():
     win = pygame.mixer.Sound(os.path.join('data/win.wav'))
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
 
-    start_new_thread(handle_server, (server, pong))
+    start_new_thread(handle_server, (msg_queue,server, pong))
+    # start_new_thread(handle_chat, (player_name,player_color,server))
 
-    chat_input = eztext.Input(y=screen_length-chat_font_size,
-                              maxlength=screen_width,
-                              color=player_color,
-                              font=pygame.font.Font("data/cour.ttf", chat_font_size),
-                              prompt="["+player_name+"]: ")
+
+    chatbox.set_nick(player_name)
+    chatbox.set_command(command)
+
+    chatbox.send("Hi, you are welcome!")
+
 
     while running:  # Main game loop
-        if len(PLAYER_LIST) <= 1:
+        if len(PLAYER_LIST) <= 0:
             continue
         else:
             for event in pygame.event.get():  # handles events
@@ -268,13 +286,8 @@ def main():
 
             screen.fill(green)
             # draw vertical line for ping pong design
-            pygame.draw.line(screen, white, (screen_width/2, 0), (screen_width/2, pong_screen_length), 5)
+            pygame.draw.line(screen, white, (screen_width/2, 0), (screen_width/2, screen_length), 5)
 
-            # draw horizontal line to divide the pong game from the chat
-            pygame.draw.line(screen, white, (0, pong_screen_length), (screen_width, pong_screen_length), 5)
-
-            # draw rectangle for the chat
-            pygame.draw.rect(screen, black, (0, pong_screen_length, screen_width, chat_screen_length), 0)
 
             for player in PLAYER_LIST:
                 # print(player)
@@ -288,9 +301,13 @@ def main():
             msg = font.render("   "+str(pong.lscore)+"  Score  "+str(pong.rscore), True, white)
             screen.blit(msg, (320, 0))  # adds score to the screen
 
-            events = pygame.event.get()
-            chat_input.update(events)
-            chat_input.draw(screen)
+            for msg in msg_queue:
+                chatbox.user_message(msg[0], msg[1])
+                msg_queue.remove(msg)
+
+            chatbox.interior.pack(expand=True, fill=BOTH)
+            
+            window.update()
 
             clock.tick(FPS)
             pygame.display.flip()  # renders everything based on the update
