@@ -1,17 +1,17 @@
 ## Forked from https://github.com/smoross/Pygame 
 ## a game from Samantha Moross
-
 import tkinter as tk
 from tkinter import *
 from chatbox import *
+
 import pygame
+from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
+    K_LEFT, K_UP, K_RIGHT, KEYUP, K_LCTRL, K_RETURN, FULLSCREEN
+
 import sys, os, time
 import random
 import json
 import queue as queue
-
-from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
-    K_LEFT, K_UP, K_RIGHT, KEYUP, K_LCTRL, K_RETURN, FULLSCREEN
 
 ## Networking imports
 from socket import *
@@ -20,43 +20,38 @@ from _thread import *
 ## Local game imports
 from paddle import PlayerPaddle
 
-import eztext
-
 HOST = ''
 GAME_PORT = 2115
 BALL_PORT = 2116
-
-# Initialize the game
-pygame.init()
-
-
-window = tk.Tk()
-
-window.geometry('340x620+680+0')
-window.title("Pong Chat")
-
-screen_width = 680
-screen_length = 620
-screensize = (screen_width, screen_length)
-
-
-# Set the screen
-screen = pygame.display.set_mode(screensize)
-
-
-chatbox = Chatbox(window)
-chat_font_size = 20
-
-FPS = 200
-
-PLAYER_LIST = []
-RECV_BUFF = 1024
 
 # Define colors
 black = (0, 0, 0)
 white = (255, 255, 255)
 green = (0, 100, 00)
 red = (255, 0, 0)
+
+# Initialize the game
+
+window = tk.Tk()
+
+window.geometry('340x620+680+0')
+window.title("Pong Chat")
+
+pygame.init()
+
+screen_width = 680
+screen_length = 620
+screensize = (screen_width, screen_length)
+    
+# Set the screen
+screen = pygame.display.set_mode(screensize)
+
+chatbox = Chatbox(window)
+
+FPS = 200
+
+PLAYER_LIST = []
+RECV_BUFF = 1024
 
 
 class Pong(object):
@@ -253,11 +248,14 @@ def main():
     start_new_thread(handle_server, (msg_queue,server, pong))
     # start_new_thread(handle_chat, (player_name,player_color,server))
 
-
-    chatbox.set_nick(player_name)
+    chatbox.set_nick("SERVER")
+    
     chatbox.set_command(command)
 
-    chatbox.send("Hi, you are welcome!")
+    chatbox.send("Welcome to Pong! Your username has been set to - " + player_name + ". Deal with it.")
+    chatbox.send("Waiting for players to connect...")
+
+    chatbox.set_nick(player_name)
 
 
     while running:  # Main game loop
