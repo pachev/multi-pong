@@ -9,7 +9,7 @@ import random
 import select
 import socket
 from pygame.locals import Rect
-from ball import Pong
+from server.ball import Pong
 import data.constants as const
 
 REMOTE_CLIENTS = []

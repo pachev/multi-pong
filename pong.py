@@ -5,15 +5,16 @@ import tkinter as tk
 from _thread import *
 from socket import *
 from tkinter import *
+import os
 
 import pygame
 from pygame.locals import KEYDOWN, K_DOWN, \
     K_UP, KEYUP
 
-from client import ball as Pong
-from client import chatbox as Chatbox
-from client import paddle as PlayerPaddle
-from data import constants as const
+from client.ball import Pong
+from client.chatbox import *
+from client.paddle import PlayerPaddle
+import data.constants as const
 
 # Initialize the game
 PLAYER_LIST = []
@@ -233,7 +234,7 @@ def main():
             default_font = pygame.font.get_default_font()
             font = pygame.font.Font(default_font, 50)
 
-            msg = font.render("   " + str(pong.lscore) + "  Score  " + str(pong.rscore), True, WHITE)
+            msg = font.render("   " + str(pong.lscore) + "  Score  " + str(pong.rscore), True, const.WHITE)
             screen.blit(msg, (320, 0))  # adds score to the screen
 
             for msg in msg_queue:
