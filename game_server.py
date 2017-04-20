@@ -15,18 +15,7 @@ import data.constants as const
 
 REMOTE_CLIENTS = []
 REMOTE_PLAYERS = []
-COLORS = [
-    (78, 103, 142), 
-    (142, 101, 78),
-    (198, 101, 182),
-    (101, 198, 197),
-    (244, 230, 73),
-    (178, 41, 23),
-    (247, 187, 113),
-    (185, 255, 173),
-    (17, 67, 84),
-    (244, 168, 176)
-]
+
 USERNAMES = [
     "TalkativeLug",
     "FaithfulWeirdo",
@@ -43,7 +32,6 @@ USERNAMES = [
 
 class Player:
 
-    global COLORS
     global USERNAMES
 
     def __init__(self, player):
@@ -51,8 +39,8 @@ class Player:
         self.y = int(const.SCREENSIZE[1]*0.5)
         self.side = player % 2
 
-        self.height = 100;
-        self.width = 10;
+        self.height = 100
+        self.width = 10
 
         if self.side == 0:
             self.x = const.SCREENSIZE[0] - (5 + (player * 30))
@@ -61,11 +49,8 @@ class Player:
 
         self.rect = Rect(0, self.y-int(self.height*0.5), self.width, self.height)
 
-        # Add random colors here to differentiate players
-        self.color = random.choice(COLORS)
-        COLORS.remove(self.color)
+        self.color = random_color()
         self.name = random.choice(USERNAMES)
-        USERNAMES.remove(self.name)
                 
     def update(self, new_x, new_y):
         self.x = new_x
@@ -83,8 +68,19 @@ class Player:
         }
 
 
+def random_color():
+    rgb = []
+    r = random.randint(0, 255)
+    g = random.randint(0, 255)
+    b = random.randint(0, 255)
+    rgb.append(r)
+    rgb.append(g)
+    rgb.append(b)
+    return tuple(rgb)
+
+
 # Function to broadcast to all other players besides the server and current client
-def broadcast_all(sock,info):
+def broadcast_all(sock, info):
     global REMOTE_CLIENTS
 
     for socket in REMOTE_CLIENTS[1:]:
