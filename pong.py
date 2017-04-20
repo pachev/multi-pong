@@ -75,7 +75,7 @@ def handle_server(queue, server, pong):
                 detail = json.loads(msg[1])
                 player = PlayerPaddle(const.SCREENSIZE, detail["id"], detail["color"])
                 PLAYER_LIST.append(player)
-                queue.append(["SERVER", "New player " + detail["name"] + " has arrived."])
+                queue.append(["SERVER", "New player " + detail["name"] + str(detail["id"]) + " has arrived."])
             except:
                 print("new player could not be created:", msg)
         if msg[0] == "currentList":
@@ -97,6 +97,7 @@ def handle_server(queue, server, pong):
                 detail = json.loads(msg[1])
                 player = next((player for player in PLAYER_LIST if player.get_id() == detail["id"]))
                 PLAYER_LIST.remove(player)
+                queue.append(["SERVER", "Player " + detail["name"] + str(detail["id"]) + " has left."])
             except:
                 print("could not remove stupid player")
         elif msg[0] == "updateBallLocation":
@@ -147,7 +148,7 @@ def main():
     res = json.loads(server.recv(const.RECV_BUFF).decode())
     player_id = res[0]["id"] 
     player_color = res[0]["color"]
-    player_name = res[0]["name"]
+    player_name = res[0]["name"] + str(player_id)
     data = b'ack;\r\n'
     server.sendall(data)
 
@@ -185,7 +186,7 @@ def main():
     win = pygame.mixer.Sound(os.path.join('data/win.wav'))
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
 
-    start_new_thread(handle_server, (msg_queue,server, pong))
+    start_new_thread(handle_server, (msg_queue, server, pong))
 
     chat_box.set_nick("SERVER")
     
@@ -196,12 +197,12 @@ def main():
 
     chat_box.set_nick(player_name)
 
-    while running:  # Main game loop
+    while running:
         if len(PLAYER_LIST) <= 0:
             continue
         else:
-            for event in pygame.event.get():  # handles events
-                if event.type == pygame.QUIT:  # Makes sure we can quit the game
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
                         pygame.quit()
                         exit()
 
@@ -220,20 +221,26 @@ def main():
 
             player_paddle1.update(udp_server)
 
-            screen.fill(const.GREEN)
-            # draw vertical line for ping pong design
+            screen.fill(const.BLACK)
             pygame.draw.line(screen, const.WHITE, (const.SCREEN_WIDTH / 2, 0), (const.SCREEN_WIDTH / 2, const.SCREEN_LENGTH), 5)
 
             for player in PLAYER_LIST:
                 player.render(screen)
 
-            pong.render(screen)  # calls render function to the screen
+            pong.render(screen)
 
             default_font = pygame.font.get_default_font()
             font = pygame.font.Font(default_font, 50)
 
-            msg = font.render("   " + str(pong.lscore) + "  Score  " + str(pong.rscore), True, const.WHITE)
-            screen.blit(msg, (320, 0))  # adds score to the screen
+            left_score = font.render(str(pong.lscore), True, const.WHITE)
+            screen.blit(left_score, ((const.SCREEN_WIDTH/4), 0))
+
+            right_score = font.render(str(pong.rscore), True, const.WHITE)
+            screen.blit(right_score, ((const.SCREEN_WIDTH/2)+150, 0))
+
+            user_font = pygame.font.Font(default_font, 20)
+            user_msg = user_font.render(player_name, True, player_color)
+            screen.blit(user_msg, ((const.SCREEN_WIDTH/2)+5, const.SCREEN_LENGTH-20))
 
             for msg in msg_queue:
                 chat_box.user_message(msg[0], msg[1])
@@ -244,7 +251,7 @@ def main():
             window.update()
 
             clock.tick(const.FPS)
-            pygame.display.flip()  # renders everything based on the update
+            pygame.display.flip()
 
     pygame.display.flip() 
     server.close()
