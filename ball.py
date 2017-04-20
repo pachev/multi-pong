@@ -15,7 +15,7 @@ class Pong(object):
         self.centerx = int(screensize[0]*0.5) 
         self.centery = int(screensize[1]*0.5)
 
-        self.radius = 8
+        self.radius = 17
 
         # create shape and sizes it
         self.rect = Rect(self.centerx-self.radius, 
@@ -25,8 +25,8 @@ class Pong(object):
         self.direction = [1, 1] # current direction to the right and up
         # list so we can access each individual part because it will change
 
-        self.speedx = 2
-        self.speedy = 5
+        self.speedx = 1
+        self.speedy = 2
 
         self.hit_left_edge = False
         self.hit_right_edge = False
@@ -65,15 +65,14 @@ class Pong(object):
         for player in player_list:
             if player.side == 1:
                 if self.rect.colliderect(player.rect):
-                    print("it's a hit", player.rect, self.rect)
-                    print("list: ", [(p.id, p.side, p.rect) for p in player_list])
+                    print("it's a hit", player.rect.center, self.rect.center)
                     self.direction[0] = -1
                     self.player_score += 1
                     if self.player_score == 10: # win if you score 15 points
                         self.player_paddle_win = True   
             else:
                 if self.rect.colliderect(player.rect):
-                    print("it's an opposite hit", player.rect, self.rect)
+                    print("it's an opposite hit", player.rect.center, self.rect.center)
                     self.direction[0] = 1
                     self.ai_score += 1
                     if self.ai_score == 10: # lose if the computer scores 15 points

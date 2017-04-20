@@ -60,12 +60,15 @@ class Player:
         self.y = int(screensize[1]*0.5)
         self.side = player % 2
 
+        self.height = 100;
+        self.width = 10;
+
         if self.side == 0:
             self.x = screensize[0] - (5 + (player * 30))
         else:
             self.x = (player * 30) + 5 if player > 1 else 5
 
-        self.rect = Rect(0, self.y-(50 * 0.5), 8, 50)
+        self.rect = Rect(0, self.y-int(self.height*0.5), self.width, self.height)
 
         # Add random colors here to differentiate players
         self.color = random.choice(COLORS)
@@ -73,9 +76,9 @@ class Player:
         self.name = random.choice(USERNAMES)
         USERNAMES.remove(self.name)
                 
-    def update(self, x, y):
-        self.x = x
-        self.y = y
+    def update(self, new_x, new_y):
+        self.x = new_x
+        self.y = new_y
         self.rect.center = (self.x, self.y)
 
     def get_info(self):
@@ -125,7 +128,7 @@ def broadcast_global(info):
 # Updates the location of the player and lets the other players know
 def udp_to_tcp_update(location, type):
     global REMOTE_PLAYERS
-    if type == "updateLocation":
+    if "updateLocation" in type:
         player = next((player for player in REMOTE_PLAYERS if player.get_info()["id"] == location["id"]))
         player.update(location["x"], location["y"])
     else:

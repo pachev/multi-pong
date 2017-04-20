@@ -62,7 +62,7 @@ class Pong(object):
         self.centery = y
         self.lscore = lscore
         self.rscore = rscore
-        self.radius = 8
+        self.radius = 17
 
         # create shape and sizes it
         self.rect = pygame.Rect(self.centerx-self.radius, 

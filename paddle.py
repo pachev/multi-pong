@@ -24,8 +24,8 @@ class PlayerPaddle(object):
         else:
             self.centerx = (player * 30) + 5 if player > 1 else 5
 
-        self.height = 50
-        self.width = 8
+        self.height = 100
+        self.width = 10
 
         self.id = player
 
