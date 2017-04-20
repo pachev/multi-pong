@@ -42,3 +42,10 @@ $ python3 PingPong.py
 ## Chatting
 
 ## Screenshots & Videos
+
+## Known Issues
+
+Pygame tends to run slower on the the mac due to the retina display. 
+click [here][3] for more info.
+
+[3]:http://stackoverflow.com/questions/29834292/pygame-simple-loop-runs-very-slowly-on-mac
