@@ -78,6 +78,7 @@ class Pong(object):
                     self.ai_score += 1
                     if self.ai_score == 10: # lose if the computer scores 15 points
                         self.ai_paddle_win = True
+
     def get_info(self):
         info = {
             "id": self.id,

@@ -1,20 +1,14 @@
-import pygame
 import json
 
-HOST = ''
-GAME_PORT = 2115
+import pygame
 
-# Define colors
-black = (0, 0, 0)
-white = (255, 255, 255)
-green = (0, 100, 00)
-red = (255, 0, 0)
+from data import constants as const
 
 
 class PlayerPaddle(object):
         # TODO: Add logic for different x positions of player paddles based on client number
 
-    def __init__(self, screensize, player, color=white):
+    def __init__(self, screensize, player, color=const.WHITE):
 
         self.screensize = screensize
         self.centery = int(screensize[1]*0.5)
@@ -53,8 +47,6 @@ class PlayerPaddle(object):
         return self.id
                 
     def update(self,server):
-        global HOST
-        global GAME_PORT
         self.centery += self.direction*self.speed
         self.rect.center = (self.centerx, self.centery)
 
@@ -67,8 +59,8 @@ class PlayerPaddle(object):
         info = {"x": self.centerx, "y": self.centery, "id": self.id}
         data = "updateLocation;" +json.dumps(info) + "\r\n"
 
-        server.sendto(data.encode(), (HOST, GAME_PORT))
+        server.sendto(data.encode(), (const.HOST, const.GAME_PORT))
 
     def render(self,screen):
         pygame.draw.rect(screen, self.color, self.rect, 0)
-        pygame.draw.rect(screen, black, self.rect, 1)
+        pygame.draw.rect(screen, const.BLACK, self.rect, 1)

@@ -19,6 +19,7 @@ Notification_Message = collections.namedtuple('Notification_Message', 'content t
 Notification_Message.__new__.__defaults__ = ('notification',)
 Notification_Of_Private_Message = collections.namedtuple('Notification_Message', 'content from_ to')
 
+
 # TODO: Add frame topic
 class Chatbox(object):
     def __init__(self, master, my_nick=None, command=None, topic=None, entry_controls=None, maximum_lines=None, timestamp_template=None, scrollbar_background=None, scrollbar_troughcolor=None, history_background=None, history_font=None, history_padx=None, history_pady=None, history_width=None, entry_font=None, entry_background=None, entry_foreground=None, label_template=u"{nick}", label_font=None, logging_file=None, tags=None):
