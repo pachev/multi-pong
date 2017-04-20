@@ -6,8 +6,8 @@ import datetime
 import collections
 
 try:
-    from Tkinter import StringVar, Text, Frame, PanedWindow, Scrollbar, Label, Entry
-    from Tkconstants import *
+    from mtTkinter import StringVar, Text, Frame, PanedWindow, Scrollbar, Label, Entry
+    from mtTkconstants import *
     import ttk
 except ImportError:
     from tkinter import StringVar, Text, Frame, PanedWindow, Scrollbar, Label, Entry
@@ -17,8 +17,8 @@ except ImportError:
 User_Message = collections.namedtuple('User_Message', 'nick content')
 Notification_Message = collections.namedtuple('Notification_Message', 'content tag')
 Notification_Message.__new__.__defaults__ = ('notification',)
-
 Notification_Of_Private_Message = collections.namedtuple('Notification_Message', 'content from_ to')
+
 
 # TODO: Add frame topic
 class Chatbox(object):
@@ -251,23 +251,6 @@ class Chatbox(object):
         else:
             self._entry_label.pack_forget()
 
-if __name__ == "__main__":
+    def set_command(self, command):
+        self._command = command
 
-    try:
-        from Tkinter import Tk
-    except ImportError:
-        from tkinter import Tk
-
-    root = Tk()
-    root.title("Chat megawidget")
-
-    def command(txt):
-        print(txt)
-
-    chatbox = Chatbox(root, my_nick="user1", command=command)
-    chatbox.user_message("user2", "hello guys")
-    
-    chatbox.send("Hi, you are welcome!")
-    chatbox.interior.pack(expand=True, fill=BOTH)
-
-    root.mainloop()
