@@ -159,8 +159,8 @@ def main():
      
     # Bind socket to local host and port
     try:
-        udp_server.bind((const.HOST, const.GAME_PORT))
-        s.bind((const.HOST, const.GAME_PORT))
+        udp_server.bind((const.HOST, const.PORT))
+        s.bind((const.HOST, const.PORT))
     except socket.error as msg:
         print('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
         sys.exit()

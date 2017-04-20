@@ -1,10 +1,6 @@
 from pygame.locals import Rect
+import data.constants as const
 
-# Define colors
-black = (0, 0, 0)
-white = (255, 255, 255)
-green = (0, 100, 00)
-red = (255, 0, 0)
 
 class Pong(object):
     def __init__(self, screensize, id):
@@ -19,9 +15,9 @@ class Pong(object):
 
         # create shape and sizes it
         self.rect = Rect(self.centerx-self.radius, 
-                                self.centery-self.radius,
-                                self.radius*2, self.radius*2)
-        self.color = white
+                         self.centery-self.radius,
+                         self.radius*2, self.radius*2)
+        self.color = const.WHITE
         self.direction = [1, 1] # current direction to the right and up
         # list so we can access each individual part because it will change
 
@@ -52,7 +48,7 @@ class Pong(object):
                 self.direction[0] = 1
 
         # checks if the code above is true
-        if self.rect.right >=self.screensize[0]-1: # if it's greater than width -1
+        if self.rect.right >= self.screensize[0]-1: # if it's greater than width -1
                 self.hit_right_edge = True
         elif self.rect.left <= 0:
                 self.hit_left_edge = True
@@ -69,14 +65,14 @@ class Pong(object):
                     print("list: ", [(p.id, p.side, p.rect) for p in player_list])
                     self.direction[0] = -1
                     self.player_score += 1
-                    if self.player_score == 10: # win if you score 15 points
+                    if self.player_score == 10:  # win if you score 15 points
                         self.player_paddle_win = True   
             else:
                 if self.rect.colliderect(player.rect):
                     print("it's an opposite hit", player.rect, self.rect)
                     self.direction[0] = 1
                     self.ai_score += 1
-                    if self.ai_score == 10: # lose if the computer scores 15 points
+                    if self.ai_score == 10:  # lose if the computer scores 15 points
                         self.ai_paddle_win = True
 
     def get_info(self):

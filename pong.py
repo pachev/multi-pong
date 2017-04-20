@@ -88,14 +88,14 @@ def handle_server(queue, server, pong):
         elif msg[0] == "updateLocation":
             try:
                 detail = json.loads(msg[1])
-                player = next((player for player in PLAYER_LIST if player.getId() == detail["id"]))
+                player = next((player for player in PLAYER_LIST if player.get_id() == detail["id"]))
                 player.update_local(detail["y"])
             except:
                 print("something went wrong with msg", msg)
         elif msg[0] == "removePlayer":
             try:
                 detail = json.loads(msg[1])
-                player = next((player for player in PLAYER_LIST if player.getId() == detail["id"]))
+                player = next((player for player in PLAYER_LIST if player.get_id() == detail["id"]))
                 PLAYER_LIST.remove(player)
             except:
                 print("could not remove stupid player")
@@ -113,7 +113,7 @@ def handle_server(queue, server, pong):
         elif msg[0] == "receivedMessage":
             global chat_box
             try:
-                #Appends the message to the queue in main thread to avoid tkinter threadign error
+                # Appends the message to the queue in main thread to avoid tkinter threadign error
                 queue.append([msg[1], msg[2]])
             except Exception as e:
                 print("Chat Error", e)
@@ -133,7 +133,7 @@ def main():
     udp_server = socket(AF_INET, SOCK_DGRAM)
 
     try:
-        server.connect((const.HOST, const.GAME_PORT))
+        server.connect((const.HOST, const.PORT))
     except error as msg:
         print("Could not connect to server", msg)
         sys.exit(1)
@@ -155,10 +155,10 @@ def main():
 
     def command(txt):
         print(txt)
-        msg = 'sentMessage;'+ player_name +';'+txt+';\r\n'
+        msg = 'sentMessage;' + player_name + ';' + txt + ';\r\n'
         server.sendall(msg.encode())
 
-    # This start_new_therad function starts a thread and automatically closes it when the function is done
+    # This start_new_thread function starts a thread and automatically closes it when the function is done
     running = True
 
     clock = pygame.time.Clock()
@@ -186,7 +186,6 @@ def main():
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
 
     start_new_thread(handle_server, (msg_queue,server, pong))
-    # start_new_thread(handle_chat, (player_name,player_color,server))
 
     chat_box.set_nick("SERVER")
     
@@ -226,7 +225,6 @@ def main():
             pygame.draw.line(screen, const.WHITE, (const.SCREEN_WIDTH / 2, 0), (const.SCREEN_WIDTH / 2, const.SCREEN_LENGTH), 5)
 
             for player in PLAYER_LIST:
-                # print(player)
                 player.render(screen)
 
             pong.render(screen)  # calls render function to the screen
