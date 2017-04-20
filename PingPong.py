@@ -62,7 +62,7 @@ class Pong(object):
         self.centery = y
         self.lscore = lscore
         self.rscore = rscore
-        self.radius = 17
+        self.radius = 8
 
         # create shape and sizes it
         self.rect = pygame.Rect(self.centerx-self.radius, 
@@ -214,7 +214,6 @@ def main():
     print("Loaded new player from server with id:", player_id)
 
     def command(txt):
-        print(txt)
         msg = 'sentMessage;'+ player_name +';'+txt+';\r\n'
         server.sendall(msg.encode())
 
@@ -288,7 +287,6 @@ def main():
 
 
             for player in PLAYER_LIST:
-                # print(player)
                 player.render(screen)
 
             pong.render(screen)  # calls render function to the screen

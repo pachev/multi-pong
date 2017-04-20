@@ -16,10 +16,13 @@ class PlayerPaddle(object):
 
     def __init__(self, screensize, player, color=white):
 
+        print("initializing with ", player)
         self.screensize = screensize
         self.centery = int(screensize[1]*0.5)
 
-        if player % 2 == 0:
+        self.side = player % 2
+
+        if self.side == 0:
             self.centerx = screensize[0] - (5 + (player * 30))
         else:
             self.centerx = (player * 30) + 5 if player > 1 else 5
@@ -33,10 +36,9 @@ class PlayerPaddle(object):
         self.rect = pygame.Rect(0, self.centery-int(self.height*0.5), self.width, self.height)
 
         self.color = color
-        self.side = player % 2
 
         # Speed and direction
-        self.speed = 3
+        self.speed = 4
         self.direction = 0
 
     def update_local(self, y_new):

@@ -15,7 +15,7 @@ class Pong(object):
         self.centerx = int(screensize[0]*0.5) 
         self.centery = int(screensize[1]*0.5)
 
-        self.radius = 17
+        self.radius = 8
 
         # create shape and sizes it
         self.rect = Rect(self.centerx-self.radius, 
@@ -25,8 +25,8 @@ class Pong(object):
         self.direction = [1, 1] # current direction to the right and up
         # list so we can access each individual part because it will change
 
-        self.speedx = 1
-        self.speedy = 2
+        self.speedx = 2
+        self.speedy = 5
 
         self.hit_left_edge = False
         self.hit_right_edge = False
@@ -63,7 +63,7 @@ class Pong(object):
 
         # check for a collision between the rectangles
         for player in player_list:
-            if player.side == 1:
+            if player.side == 0:
                 if self.rect.colliderect(player.rect):
                     print("it's a hit", player.rect.center, self.rect.center)
                     self.direction[0] = -1

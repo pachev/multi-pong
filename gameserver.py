@@ -4,6 +4,7 @@ import random
 import socket, select
 import json
 import sys
+
 from _thread import *
 from ball import Pong
 from pygame.locals import Rect
@@ -131,6 +132,8 @@ def udp_to_tcp_update(location, type):
     if "updateLocation" in type:
         player = next((player for player in REMOTE_PLAYERS if player.get_info()["id"] == location["id"]))
         player.update(location["x"], location["y"])
+        info = type + json.dumps(player.get_info()) +";\r\n"
+        broadcast_global(info.encode())
     else:
         broadcast_global((type + json.dumps(location) + ";\r\n").encode())
 
