@@ -232,11 +232,11 @@ def main():
             default_font = pygame.font.get_default_font()
             font = pygame.font.Font(default_font, 50)
 
-            left_score = font.render(str(pong.lscore), True, const.WHITE)
-            screen.blit(left_score, ((const.SCREEN_WIDTH/4), 0))
+            left_score = font.render("West Side " + str(pong.lscore), True, const.WHITE)
+            screen.blit(left_score, (20, 0))
 
-            right_score = font.render(str(pong.rscore), True, const.WHITE)
-            screen.blit(right_score, ((const.SCREEN_WIDTH/2)+150, 0))
+            right_score = font.render("East Side " + str(pong.rscore), True, const.WHITE)
+            screen.blit(right_score, ((const.SCREEN_WIDTH/2)+20, 0))
 
             user_font = pygame.font.Font(default_font, 20)
             user_msg = user_font.render(player_name, True, player_color)
