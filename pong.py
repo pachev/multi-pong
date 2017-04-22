@@ -109,6 +109,9 @@ def handle_server(queue, server, pong):
                     detail["y"],
                     detail["lscore"],
                     detail["rscore"],
+                    detail["lwin"],
+                    detail["rwin"],
+                    detail["sound"],
                 )
             except Exception as e:
                 print("ball error", e)
@@ -180,9 +183,6 @@ def main():
 
     pygame.display.set_caption('Multi Pong')
 
-    pygame.mixer.music.load(os.path.join('data/ping.wav'))
-    pygame.mixer.music.load(os.path.join('data/win.wav'))
-    pygame.mixer.music.load(os.path.join('data/lose.wav'))
 
     win = pygame.mixer.Sound(os.path.join('data/win.wav'))
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
@@ -225,6 +225,12 @@ def main():
             screen.fill(const.BLACK)
             pygame.draw.line(screen, const.WHITE, (const.SCREEN_WIDTH / 2, 0), (const.SCREEN_WIDTH / 2, const.SCREEN_LENGTH), 5)
 
+            #Deterimine win
+            if pong.lwin== True:
+                running = False
+            elif pong.rwin == True:
+                running = False
+
             for player in PLAYER_LIST:
                 player.render(screen)
 
@@ -253,6 +259,20 @@ def main():
 
             clock.tick(const.FPS)
             pygame.display.flip()
+
+    if pong.lwin == True and player_paddle1.side == 1:
+        txt = font.render(" You Won!!!!", True, const.WHITE)
+        screen.blit(txt, (100, 200))
+        win.play()
+    elif pong.rwin == True and player_paddle1.side == 0:
+        txt = font.render(" You Won!!!!", True, const.WHITE)
+        screen.blit(txt, (100, 200))
+        win.play()
+        print("left  won")
+    else:
+        txt2 = font.render("Sorry, You Lost!", True, const.WHITE)
+        screen.blit(txt2, (100, 200))
+        lose.play()
 
     pygame.display.flip() 
     server.close()

@@ -1,5 +1,6 @@
 from pygame.locals import Rect
 import data.constants as const
+import time
 
 
 class Pong(object):
@@ -32,8 +33,10 @@ class Pong(object):
 
         self.player_paddle_win = False
         self.ai_paddle_win = False              
+        self.play_sound = False
 
     def update(self, player_list):
+        self.play_sound = False
         self.centerx += self.direction[0]*self.speedx
         self.centery += self.direction[1]*self.speedy
         self.rect.center = (self.centerx, self.centery)
@@ -57,21 +60,28 @@ class Pong(object):
         elif self.rect.bottom >= self.screensize[1]-1:
                 self.hit_left_edge = True
 
+
+        #Resets score after all player leave and restart game
+        if  len(player_list) < 1:
+            self.reset_score()
+
         # check for a collision between the rectangles
         for player in player_list:
             if player.side == 0:
                 if self.rect.colliderect(player.rect):
-                    print("it's a hit", player.rect.center, self.rect.center)
                     self.direction[0] = -1
+                    self.play_sound=True;
                     self.player_score += 1
-                    if self.player_score == 10:  # win if you score 15 points
+                    if self.player_score == 15:  # win if you score 15 points
+                        time.sleep(.4)
                         self.player_paddle_win = True   
             else:
                 if self.rect.colliderect(player.rect):
-                    print("it's an opposite hit", player.rect.center, self.rect.center)
                     self.direction[0] = 1
+                    self.play_sound=True;
                     self.ai_score += 1
-                    if self.ai_score == 10:  # lose if the computer scores 15 points
+                    if self.ai_score == 15:  # lose if the computer scores 15 points
+                        time.sleep(.4)
                         self.ai_paddle_win = True
 
     def get_info(self):
@@ -81,6 +91,15 @@ class Pong(object):
             "y": self.centery,
             "lscore": self.ai_score,
             "rscore": self.player_score,
+            "rwin": self.player_paddle_win,
+            "lwin": self.ai_paddle_win,
+            "sound": self.play_sound
         }
         return info
+
+    def reset_score(self):
+        self.player_score = 0
+        self.ai_score = 0
+        self.ai_paddle_win = False
+        self.player_paddle_win = False   
 
