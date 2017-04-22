@@ -5,6 +5,19 @@ HOST = ''
 PORT = 2115
 RECV_BUFF = 1024
 
+USERNAMES = [
+    "TalkativeLug",
+    "FaithfulWeirdo",
+    "MeagerSucker",
+    "ForthrightNerd",
+    "ElderlyCheater",
+    "RadiantJerk",
+    "MediocreNobody",
+    "HandmadeDeadbeat",
+    "RapidSicko",
+    "UnequalFool"
+]
+
 # Colors
 
 BLACK = (0, 0, 0)
