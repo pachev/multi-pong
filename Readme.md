@@ -2,8 +2,9 @@
 
 by Alicia Rodriguez & Pachev Joseph
 
-* [Installation](#installation)
+* [Installation & Dependencies](#installation-&-dependencies)
 * [Running](#running)
+* [Playing](#playing)
 * [Chatting](#chatting)
 * [Screenshots & Videos](#screenshots-&-videos)
 
@@ -36,12 +37,22 @@ allows you set the port and the host during startup.
 
 ## Playing
 
-If you just want to play the game, the `game_server.py` file is actually already running on host `pachevjoseph.com`.
-So, to start playing, all you have to do is run the following command and enter the right host in the menu screen:
+To start playing, all you have to do is run the following command:
 
 ```
-$ python3 PingPong.py
+$ python3 pong.py
 ```
+
+The following menu screen will appear:
+
+![Menu](/assets/menu.png?raw=true "Menu screen")
+
+- The player name field will be set to a random username.
+- The host appears as empty which is just the same as `localhost`.
+
+> NOTE: If you just want to play the game, the `game_server.py` file is actually already running on host `pachevjoseph.com`. So change the host to `pachevjoseph.com` on the menu.
+
+- The port is set to default as `2115`.
 
 
 ## Chatting
@@ -51,9 +62,9 @@ non distracting window that opens up on the side of the main game window
 
 ## Screenshots & Videos
 
-![Alt text](/assets/screenshot1.png?raw=true "Game with two player")
-![Alt text](/assets/screenshot2.png?raw=true "Game with Multiple player")
-![Alt text](/assets/screenshot3.jpg?raw=true "Gif of player")
+![2 Player](/assets/screenshot1.png?raw=true "Game with two player")
+![Multi Player](/assets/screenshot2.png?raw=true "Game with Multiple player")
+![Gif of player](/assets/screenshot3.png?raw=true "Gif of player")
 
 ## Known Issues
 
