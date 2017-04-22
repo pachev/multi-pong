@@ -18,23 +18,7 @@ import data.constants as const
 REMOTE_CLIENTS = []
 REMOTE_PLAYERS = []
 
-USERNAMES = [
-    "TalkativeLug",
-    "FaithfulWeirdo",
-    "MeagerSucker",
-    "ForthrightNerd",
-    "ElderlyCheater",
-    "RadiantJerk",
-    "MediocreNobody",
-    "HandmadeDeadbeat",
-    "RapidSicko",
-    "UnequalFool"
-]
-
-
 class Player:
-
-    global USERNAMES
 
     def __init__(self, player):
         self.id = player
@@ -52,7 +36,6 @@ class Player:
         self.rect = Rect(0, self.y-int(self.height*0.5), self.width, self.height)
 
         self.color = random_color()
-        self.name = random.choice(USERNAMES)
                 
     def update(self, new_x, new_y):
         self.x = new_x
@@ -65,8 +48,7 @@ class Player:
             "x": self.x,
             "y": self.y,
             "side": self.side,
-            "color": self.color,
-            "name": self.name
+            "color": self.color
         }
 
 

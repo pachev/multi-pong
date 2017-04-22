@@ -1,12 +1,12 @@
 ## Forked from https://github.com/smoross/Pygame 
 ## a game from Samantha Moross
-
 import json
 import tkinter as tk
 from _thread import *
 from socket import *
 from tkinter import *
 import os
+import random
 
 import pygame
 from pygame.locals import KEYDOWN, K_DOWN, \
@@ -17,21 +17,85 @@ from client.chatbox import *
 from client.paddle import PlayerPaddle
 import data.constants as const
 
-# Initialize the game
 PLAYER_LIST = []
 
-window = tk.Tk()
 
-window.geometry('340x620+680+0')
-window.title("Pong Chat")
+def start_game(menu, username_input, host_input, port_input):
 
-pygame.init()
+    # Initialize the game
+
+    window = tk.Tk()
+    window.geometry('340x620+680+0')
+    window.title("Multi Pong Chat")
+    pygame.init()
+        
+    # Set the screen
+
+    screen = pygame.display.set_mode(const.SCREENSIZE)
+    chat_box = Chatbox(window)
+
+    player_name = username_input.get()
+    host = host_input.get()
+    port = int(port_input.get())
+
+    main(chat_box, screen, window, menu, player_name, host, port)
+
+def menu():
+
+    menu = tk.Tk()
+
+    menu.geometry('380x320+0+0')
+    menu.title("Welcome to Multi Pong!")
+
+    welcome_text = Label(menu, text="Multi Pong", font=("Verdana", 30, "bold"), fg="#0e6519")
+    welcome_text.pack(side=TOP)
+
+    welcome_text = Label(menu, text="A multiplayer pong game that will make you say 'WOW'!", font=("Verdana", 11, "bold italic"), height=3, anchor=N)
+    welcome_text.pack(side=TOP)
+
+    user_frame = Frame(menu)
+    user_frame.pack(side=TOP)
+
+    user_label_text = StringVar()
+    user_label_text.set("Player Name")
+    user_label = Label(user_frame, textvariable=user_label_text)
+    user_label.pack(side=LEFT)
+
+    default_username = StringVar()
+    username_input = Entry(user_frame, textvariable=default_username)
+    username_input.pack(side=LEFT, padx="10", pady="10")
+    default_username.set(random.choice(const.USERNAMES))
+
+    host_frame = Frame(menu)
+    host_frame.pack(side=TOP)
+
+    host_label_text = StringVar()
+    host_label_text.set("Host")
+    host_label = Label(host_frame, textvariable=host_label_text)
+    host_label.pack(side=LEFT)
+
+    default_host = StringVar()
+    host_input = Entry(host_frame, textvariable=default_host)
+    host_input.pack(side=LEFT, padx="10", pady="10")
+    default_host.set(const.HOST)
+
+    port_frame = Frame(menu)
+    port_frame.pack(side=TOP)
+
+    port_label_text = StringVar()
+    port_label_text.set("Port")
+    port_label = Label(port_frame, textvariable=port_label_text)
+    port_label.pack(side=LEFT)
+
+    default_port = StringVar()
+    port_input = Entry(port_frame, textvariable=default_port)
+    port_input.pack(side=LEFT, padx="10", pady="10")
+    default_port.set(const.PORT)
     
-# Set the screen
+    start_game_button = Button(menu, text="Start Game!", command= lambda: start_game(menu, username_input, host_input, port_input), fg="#0e6519")
+    start_game_button.pack(side=BOTTOM, padx="10", pady="10")
 
-screen = pygame.display.set_mode(const.SCREENSIZE)
-chat_box = Chatbox(window)
-
+    menu.mainloop()
 
 def update_players(p_list):
     global PLAYER_LIST
@@ -45,7 +109,7 @@ def update_players(p_list):
 def handle_ball(server, pong):
 
     while True:
-        data, addr = server.recvfrom(const.RECV_BUFF) # buffer size is 1024 bytes
+        data, addr = server.recvfrom(const.RECV_BUFF)
         msg = data.decode().split(";")
         print('msg', msg)
         if msg[0] == "updateLocation":
@@ -63,8 +127,7 @@ def handle_ball(server, pong):
                 print("ball error", msg)
 
 
-def handle_server(queue, server, pong):
-    global screen
+def handle_server(queue, server, pong, player_name):
     global PLAYER_LIST
     data = b'ack;\r\n'
 
@@ -76,7 +139,7 @@ def handle_server(queue, server, pong):
                 detail = json.loads(msg[1])
                 player = PlayerPaddle(const.SCREENSIZE, detail["id"], detail["color"])
                 PLAYER_LIST.append(player)
-                queue.append(["SERVER", "New player " + detail["name"] + str(detail["id"]) + " has arrived."])
+                queue.append(["SERVER", "New player " + player_name + " has arrived."])
             except:
                 print("new player could not be created:", msg)
         if msg[0] == "currentList":
@@ -98,7 +161,7 @@ def handle_server(queue, server, pong):
                 detail = json.loads(msg[1])
                 player = next((player for player in PLAYER_LIST if player.get_id() == detail["id"]))
                 PLAYER_LIST.remove(player)
-                queue.append(["SERVER", "Player " + detail["name"] + str(detail["id"]) + " has left."])
+                queue.append(["SERVER", "Player " + player_name + " has left."])
             except:
                 print("could not remove stupid player")
         elif msg[0] == "updateBallLocation":
@@ -118,7 +181,7 @@ def handle_server(queue, server, pong):
         elif msg[0] == "receivedMessage":
             global chat_box
             try:
-                # Appends the message to the queue in main thread to avoid tkinter threadign error
+                # Appends the message to the queue in main thread to avoid tkinter threading error
                 queue.append([msg[1], msg[2]])
             except Exception as e:
                 print("Chat Error", e)
@@ -126,19 +189,18 @@ def handle_server(queue, server, pong):
     server.close()
 
 
-def main():
+def main(chat_box, screen, window, menu, player_name, host, port):
     global PLAYER_LIST
-    global chat_box
-    global screen
     msg_queue = []
 
-    # TODO: get host and port from a config file and possibly from settings
+    menu.destroy()
+
     server = socket(AF_INET, SOCK_STREAM)
 
     udp_server = socket(AF_INET, SOCK_DGRAM)
 
     try:
-        server.connect((const.HOST, const.PORT))
+        server.connect((host, port))
     except error as msg:
         print("Could not connect to server", msg)
         sys.exit(1)
@@ -152,7 +214,6 @@ def main():
     res = json.loads(server.recv(const.RECV_BUFF).decode())
     player_id = res[0]["id"] 
     player_color = res[0]["color"]
-    player_name = res[0]["name"] + str(player_id)
     data = b'ack;\r\n'
     server.sendall(data)
 
@@ -163,7 +224,6 @@ def main():
         msg = 'sentMessage;' + player_name + ';' + txt + ';\r\n'
         server.sendall(msg.encode())
 
-    # This start_new_thread function starts a thread and automatically closes it when the function is done
     running = True
 
     clock = pygame.time.Clock()
@@ -187,13 +247,13 @@ def main():
     win = pygame.mixer.Sound(os.path.join('data/win.wav'))
     lose = pygame.mixer.Sound(os.path.join('data/lose.wav'))        
 
-    start_new_thread(handle_server, (msg_queue, server, pong))
+    start_new_thread(handle_server, (msg_queue, server, pong, player_name))
 
     chat_box.set_nick("SERVER")
     
     chat_box.set_command(command)
 
-    chat_box.send("Welcome to Pong! Your username has been set to - " + player_name + ". Deal with it.")
+    chat_box.send("Welcome to Multi Pong " + player_name + "!")
     chat_box.send("Waiting for players to connect...")
 
     chat_box.set_nick(player_name)
@@ -237,7 +297,7 @@ def main():
             pong.render(screen)
 
             default_font = pygame.font.get_default_font()
-            font = pygame.font.Font(default_font, 50)
+            font = pygame.font.Font(default_font, 30)
 
             left_score = font.render("West Side " + str(pong.lscore), True, const.WHITE)
             screen.blit(left_score, (20, 0))
@@ -280,4 +340,4 @@ def main():
     pygame.quit()
 
 if __name__ == '__main__':
-        main()
+        menu()
