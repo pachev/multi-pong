@@ -1,6 +1,5 @@
 # Multi-Pong 
-
-by Alicia Rodriguez & Pachev Joseph
+by [Alicia Rodriguez](https://github.com/arodr967) & [Pachev Joseph](https://github.com/pachev)
 
 * [Installation & Dependencies](#installation-&-dependencies)
 * [Running](#running)
@@ -45,7 +44,7 @@ $ python3 pong.py
 
 The following menu screen will appear:
 
-![Menu](/assets/menu.png?raw=true "Menu screen")
+![Menu](/assets/screenshot3.png?raw=true "Menu screen")
 
 - The player name field will be set to a random username.
 - The host appears as empty which is just the same as `localhost`.
@@ -58,13 +57,12 @@ The following menu screen will appear:
 ## Chatting
 
 The game also comes with a chat system that allows users to interract between games. This is a 
-non distracting window that opens up on the side of the main game window
+non distracting window that opens up on the side of the main game window.
 
 ## Screenshots & Videos
 
 ![2 Player](/assets/screenshot1.png?raw=true "Game with two player")
 ![Multi Player](/assets/screenshot2.png?raw=true "Game with Multiple player")
-![Gif of player](/assets/screenshot3.png?raw=true "Gif of player")
 
 ## Known Issues
 
