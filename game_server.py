@@ -1,6 +1,8 @@
 # Game Server
 
+
 import sys
+import argparse
 
 from _thread import *
 from pygame import time as gametime
@@ -151,7 +153,26 @@ def main():
 
     global REMOTE_CLIENTS
     global REMOTE_PLAYERS
+    
 
+    #Argument parsing done with argparse for port and host during startup
+    parser = argparse.ArgumentParser(description='Multi Player Pong Server', prog='game_server')
+    parser.add_argument('--host','-i',
+                        action="store",
+                        dest='arg_host',
+                        help='Hostname for clients to connect')
+    parser.add_argument('--port','-p', 
+                        action="store",
+                        dest='arg_port',
+                        help='Port for clients to connect')
+
+    args = parser.parse_args()
+
+    #Uses the constant localhost if none is provided
+    host = args.arg_host if args.arg_host is not None else const.HOST
+    port = args.arg_port if args.arg_port is not None else const.PORT
+
+    print("host", host, "port", port)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -161,8 +182,8 @@ def main():
      
     # Bind socket to local host and port
     try:
-        udp_server.bind((const.HOST, const.PORT))
-        s.bind((const.HOST, const.PORT))
+        udp_server.bind((host, port))
+        s.bind((host, port))
     except socket.error as msg:
         print('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
         sys.exit()

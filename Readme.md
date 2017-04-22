@@ -28,15 +28,16 @@ distribution.
 Since the game uses TCP/UDP sockets, the `game_server.py` file needs to be ran first. This is done with the following command:
 
 ```
-$ python3 game_server.py
+$ python3 game_server.py [--host] host [--port] port
 ```
 This starts a server that can now listen and server multiple clients wanting to play the game. The host and port 
-are configured in `data/constants.py`.
+are configured in `data/constants.py` as localhost:2115. Howvever, running gameserver the arguments `--host` and/or `--port`
+allows you set the port and the host during startup.
 
 ## Playing
 
 If you just want to play the game, the `game_server.py` file is actually already running on host `pachevjoseph.com`.
-So, to start playing, all you have to do is run the following command after changing the host:
+So, to start playing, all you have to do is run the following command and enter the right host in the menu screen:
 
 ```
 $ python3 PingPong.py
