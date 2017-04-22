@@ -7,7 +7,7 @@ from data import constants as const
 class Pong(object):
     def __init__(self, screensize, id, x, y, lscore, rscore):
         basepath = os.path.dirname(__file__)
-        filepath = os.path.abspath(os.path.join(basepath, "..", "data/ping.wav"))
+        filepath = os.path.abspath(os.path.join(basepath, "..", "data/wow.wav"))
         self.screensize = screensize
         self.id = id
         self.centerx = x
