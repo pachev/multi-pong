@@ -16,21 +16,36 @@ from client.chatbox import *
 from client.paddle import PlayerPaddle
 import data.constants as const
 
-# Initialize the game
 PLAYER_LIST = []
 
-window = tk.Tk()
+def start_game(root, frame):
 
-window.geometry('340x620+680+0')
-window.title("Pong Chat")
+    # Initialize the game
 
-pygame.init()
-    
-# Set the screen
+    window = tk.Tk()
+    window.geometry('340x620+680+0')
+    window.title("Pong Chat")
+    pygame.init()
+        
+    # Set the screen
 
-screen = pygame.display.set_mode(const.SCREENSIZE)
-chat_box = Chatbox(window)
+    screen = pygame.display.set_mode(const.SCREENSIZE)
+    chat_box = Chatbox(window)
 
+    main(chat_box, screen, window, root, frame)
+
+def menu():
+
+    root = tk.Tk()
+
+    root.geometry('680x620+0+0')
+    root.configure(background='black')
+    frame = Frame(root, bg="black")
+    frame.pack()
+    b = Button(frame, text="Start Game!", command= lambda: start_game(root, frame))
+    b.pack(padx="10", pady="10")
+
+    root.mainloop()
 
 def update_players(p_list):
     global PLAYER_LIST
@@ -44,7 +59,7 @@ def update_players(p_list):
 def handle_ball(server, pong):
 
     while True:
-        data, addr = server.recvfrom(const.RECV_BUFF) # buffer size is 1024 bytes
+        data, addr = server.recvfrom(const.RECV_BUFF)
         msg = data.decode().split(";")
         print('msg', msg)
         if msg[0] == "updateLocation":
@@ -63,7 +78,6 @@ def handle_ball(server, pong):
 
 
 def handle_server(queue, server, pong):
-    global screen
     global PLAYER_LIST
     data = b'ack;\r\n'
 
@@ -122,11 +136,13 @@ def handle_server(queue, server, pong):
     server.close()
 
 
-def main():
+def main(chat_box, screen, window, root, frame):
     global PLAYER_LIST
-    global chat_box
-    global screen
     msg_queue = []
+
+    # frame.pack_forget()
+    frame.destroy()
+    root.destroy()
 
     # TODO: get host and port from a config file and possibly from settings
     server = socket(AF_INET, SOCK_STREAM)
@@ -259,4 +275,4 @@ def main():
     pygame.quit()
 
 if __name__ == '__main__':
-        main()
+        menu()
